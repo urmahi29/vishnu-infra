@@ -15,7 +15,7 @@ const AdminLayout = () => {
       <Sidebar role="admin" isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
       {/* Main Content */}
-      <div className={`transition-all duration-300 ml-0 lg:${sidebarOpen ? 'ml-[260px]' : 'ml-20'}`}>
+      <div className={`transition-all duration-300 ml-0 ${sidebarOpen ? 'lg:ml-[260px]' : 'lg:ml-20'}`}>
         {/* Top Navbar */}
         <Navbar role="admin" onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 

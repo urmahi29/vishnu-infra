@@ -11,7 +11,7 @@ const UserLayout = () => {
     <div className="min-h-screen bg-gray-50">
       <Sidebar role="user" isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
       
-      <div className={`transition-all duration-300 ml-0 lg:${sidebarOpen ? 'ml-[260px]' : 'ml-20'}`}>
+      <div className={`transition-all duration-300 ml-0 ${sidebarOpen ? 'lg:ml-[260px]' : 'lg:ml-20'}`}>
         <Navbar role="user" onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         
         <main className="p-4 sm:p-6 mt-16">
