@@ -816,11 +816,11 @@ CREATE TABLE trips (
 
 -- Default Admin User (password: Admin@123)
 INSERT INTO users (employee_id, name, email, password, role, phone, designation, department, status) VALUES
-('ADM001', 'System Administrator', 'admin@roadconstruction.com', '$2a$10$xVqYLFMJD5pMzbVZKw3XaeJq5kDmGpC0hFpRQrKXqR0kGvCx9pYdi', 'admin', '+1-555-0100', 'Project Director', 'Management', 'active');
+('ADM001', 'System Administrator', 'admin@roadconstruction.com', '$2a$10$gx7Bmnr9ptiZIt0fajnoYeb54.s4INw3kjblRFePUawWM6c0MWtOa', 'admin', '+1-555-0100', 'Project Director', 'Management', 'active');
 
 -- Default User (password: User@123)
 INSERT INTO users (employee_id, name, email, password, role, phone, designation, department, status) VALUES
-('EMP001', 'John Engineer', 'user@roadconstruction.com', '$2a$10$8KzQMGY5sMF8GqZrHqYcXOQmT5oG6oFqMx3bZyRvLw0lKtDpV7e2e', 'user', '+1-555-0101', 'Site Engineer', 'Engineering', 'active');
+('EMP001', 'John Engineer', 'user@roadconstruction.com', '$2a$10$BUkATtC3zHIb684u//MbjuWIwyEKgujSfFjnkDVYNo0nzYCW4g6xa', 'user', '+1-555-0101', 'Site Engineer', 'Engineering', 'active');
 
 -- Insert some sample data for categories
 INSERT INTO budget_categories (name, description) VALUES
