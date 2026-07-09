@@ -544,7 +544,7 @@ const VehicleTab = ({ projectId, canEdit }) => {
 };
 
 // ─── PROJECT WORKSPACE ───
-const ProjectDetail = ({ projectId, onBack, canEdit }) => {
+const ProjectDetail = ({ projectId, onBack, canEdit, onEdit, onDelete, refreshTrigger }) => {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -564,7 +564,7 @@ const ProjectDetail = ({ projectId, onBack, canEdit }) => {
 
   useEffect(() => {
     fetchProject();
-  }, [projectId]);
+  }, [projectId, refreshTrigger]);
 
   if (loading) {
     return (
@@ -597,7 +597,7 @@ const ProjectDetail = ({ projectId, onBack, canEdit }) => {
       className="space-y-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between gap-4 border-b border-gray-100 pb-4">
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
@@ -613,6 +613,24 @@ const ProjectDetail = ({ projectId, onBack, canEdit }) => {
             </p>
           </div>
         </div>
+        {canEdit && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => onEdit(project)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-all shadow-sm"
+              title="Edit Project"
+            >
+              <FiEdit2 className="w-4 h-4" /> Edit Project
+            </button>
+            <button
+              onClick={() => onDelete(project)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-all shadow-sm"
+              title="Delete Project"
+            >
+              <FiTrash2 className="w-4 h-4" /> Delete Project
+            </button>
+          </div>
+        )}
       </motion.div>
 
       {/* Tabs */}
@@ -660,6 +678,9 @@ const ProjectsPage = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
+  const [deleteConfirmProject, setDeleteConfirmProject] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/user';
 
@@ -681,15 +702,56 @@ const ProjectsPage = () => {
   }, [id]);
 
   const handleSaveProject = async (data) => {
-    await projectsAPI.create(data);
-    fetchProjects();
+    try {
+      if (editingProject) {
+        await projectsAPI.update(editingProject.id, data);
+        toast.success('Project updated successfully!');
+        setEditingProject(null);
+      } else {
+        await projectsAPI.create(data);
+        toast.success('Project created successfully!');
+      }
+      setRefreshTrigger(prev => prev + 1);
+      fetchProjects();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save project.');
+    }
+  };
+
+  const handleDeleteProject = async (projectId) => {
+    try {
+      await projectsAPI.delete(projectId);
+      toast.success('Project deleted successfully!');
+      setDeleteConfirmProject(null);
+      setRefreshTrigger(prev => prev + 1);
+      fetchProjects();
+      navigate(`${basePath}/projects`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete project.');
+    }
   };
 
   const canEdit = useCanEdit();
 
   // If ID exists in route params, render Project Workspace
   if (id) {
-    return <ProjectDetail projectId={id} onBack={() => navigate(`${basePath}/projects`)} canEdit={canEdit} />;
+    return (
+      <ProjectDetail
+        projectId={id}
+        onBack={() => navigate(`${basePath}/projects`)}
+        canEdit={canEdit}
+        onEdit={(proj) => {
+          setEditingProject(proj);
+          setIsModalOpen(true);
+        }}
+        onDelete={(proj) => {
+          setDeleteConfirmProject(proj);
+        }}
+        refreshTrigger={refreshTrigger}
+      />
+    );
   }
 
   return (
@@ -756,9 +818,32 @@ const ProjectsPage = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-blue-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span>Open Workspace</span>
-                    <FiChevronRight className="w-4 h-4" />
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    {canEdit && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setEditingProject(project);
+                            setIsModalOpen(true);
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all animate-none"
+                          title="Edit Project Name"
+                        >
+                          <FiEdit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmProject(project)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all animate-none"
+                          title="Delete Project"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+                    <div className="flex items-center gap-1.5 text-xs text-blue-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span>Open Workspace</span>
+                      <FiChevronRight className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -767,14 +852,54 @@ const ProjectsPage = () => {
         )}
       </motion.div>
 
-      {/* Create Project Modal */}
+      {/* Create/Edit Project Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <ProjectModal
             isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+            onClose={() => {
+              setIsModalOpen(false);
+              setEditingProject(null);
+            }}
             onSave={handleSaveProject}
+            project={editingProject}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Delete Project Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmProject && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 text-center"
+            >
+              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <FiTrash2 className="w-7 h-7 text-red-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Project?</h3>
+              <p className="text-gray-500 text-sm mb-6">
+                Are you sure you want to delete the project <strong>{deleteConfirmProject.project_name || deleteConfirmProject.name}</strong>? This will delete all staff, vehicles, and logs associated with it.
+              </p>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={() => setDeleteConfirmProject(null)}
+                  className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold text-sm transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteProject(deleteConfirmProject.id)}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold text-sm transition-all shadow-lg shadow-red-200"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </motion.div>
