@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiFolder, FiTruck, FiUsers, FiBell,
@@ -87,6 +87,9 @@ const AdminDashboard = () => {
   const pendingTasks = dashboardData?.pending_tasks || [];
   const recentExpenses = dashboardData?.recent_expenses || [];
 
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/user';
+
   const statsCards = [
     {
       label: 'Total Running Projects',
@@ -97,7 +100,7 @@ const AdminDashboard = () => {
       iconBg: 'bg-blue-500',
       textColor: 'text-blue-600',
       gradient: 'from-blue-500 to-blue-600',
-      link: '/admin/projects'
+      link: `${basePath}/projects`
     },
     {
       label: 'Total Employees',
@@ -108,7 +111,7 @@ const AdminDashboard = () => {
       iconBg: 'bg-emerald-500',
       textColor: 'text-emerald-600',
       gradient: 'from-emerald-500 to-green-600',
-      link: '/admin/workforce'
+      link: `${basePath}/workforce`
     },
     {
       label: 'Notifications',
@@ -118,7 +121,7 @@ const AdminDashboard = () => {
       iconBg: 'bg-purple-500',
       textColor: 'text-purple-600',
       gradient: 'from-purple-500 to-violet-600',
-      link: '/admin/notifications',
+      link: `${basePath}/notifications`,
       isNotif: true
     },
   ];

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import { 
   FiSave, FiKey, FiGlobe, FiMapPin, FiPhone, FiMail, FiClock,
@@ -7,6 +8,9 @@ import {
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaWhatsapp, FaXTwitter } from 'react-icons/fa6';
 
 const Settings = () => {
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith('/admin');
+
   const [profile, setProfile] = useState({ name: '', email: '', phone: '', designation: '', department: '' });
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState('');
@@ -120,7 +124,7 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Admin Settings</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{isAdminPath ? 'Admin Settings' : 'Settings'}</h1>
         <p className="text-gray-500 mt-1">Manage system configuration, profile, and contact information</p>
       </div>
 

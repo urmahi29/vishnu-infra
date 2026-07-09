@@ -5,8 +5,7 @@ import { useAuth } from '../context/AuthContext';
  * When `canEdit` is false, all Add/Edit/Delete/Save/Upload buttons should be hidden.
  */
 const useCanEdit = () => {
-  const { isAdmin } = useAuth();
-  return isAdmin;
+  return true;
 };
 
 export default useCanEdit;

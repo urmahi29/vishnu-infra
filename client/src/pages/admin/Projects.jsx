@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiFolder, FiUser, FiTruck, FiUsers, FiPlus, FiChevronRight,
   FiArrowLeft, FiTrash2, FiEdit2, FiX
@@ -656,9 +656,12 @@ const ProjectDetail = ({ projectId, onBack, canEdit }) => {
 const ProjectsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/user';
 
   const fetchProjects = async () => {
     try {
@@ -686,7 +689,7 @@ const ProjectsPage = () => {
 
   // If ID exists in route params, render Project Workspace
   if (id) {
-    return <ProjectDetail projectId={id} onBack={() => navigate('/admin/projects')} canEdit={canEdit} />;
+    return <ProjectDetail projectId={id} onBack={() => navigate(`${basePath}/projects`)} canEdit={canEdit} />;
   }
 
   return (
@@ -737,7 +740,7 @@ const ProjectsPage = () => {
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  onClick={() => navigate(`/admin/projects/${project.id}`)}
+                  onClick={() => navigate(`${basePath}/projects/${project.id}`)}
                   className="flex items-center justify-between p-5 hover:bg-gray-50/50 cursor-pointer group transition-all"
                 >
                   <div className="flex items-center gap-4">

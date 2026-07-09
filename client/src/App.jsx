@@ -33,12 +33,13 @@ const AdminStaffExpenses = lazy(() => import('./pages/admin/StaffExpenses'));
 const AdminTrips = lazy(() => import('./pages/admin/Trips'));
 
 // User Pages
-const UserDashboard = lazy(() => import('./pages/user/Dashboard'));
-const UserProjects = lazy(() => import('./pages/user/Projects'));
-const UserTasks = lazy(() => import('./pages/user/Tasks'));
+const UserDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const UserProjects = lazy(() => import('./pages/admin/Projects'));
+const UserTasks = lazy(() => import('./pages/admin/Tasks'));
 const UserProfile = lazy(() => import('./pages/user/Profile'));
-const UserNotifications = lazy(() => import('./pages/user/Notifications'));
-const UserDocuments = lazy(() => import('./pages/user/Documents'));
+const UserNotifications = lazy(() => import('./pages/admin/Notifications'));
+const UserDocuments = lazy(() => import('./pages/admin/Documents'));
+const UserSettings = lazy(() => import('./pages/admin/Settings'));
 
 // Reused admin pages for user read-only access
 const UserBudget = lazy(() => import('./pages/admin/Budget'));
@@ -132,15 +133,17 @@ const AnimatedRoutes = () => {
             <Route index element={<Navigate to="/user/dashboard" replace />} />
             <Route path="dashboard" element={<UserDashboard />} />
             <Route path="projects" element={<UserProjects />} />
-            <Route path="tasks" element={<Navigate to="/user/dashboard" replace />} />
+            <Route path="projects/:id" element={<UserProjects />} />
+            <Route path="tasks" element={<UserTasks />} />
             <Route path="profile" element={<UserProfile />} />
-            <Route path="notifications" element={<Navigate to="/user/dashboard" replace />} />
+            <Route path="notifications" element={<UserNotifications />} />
             <Route path="documents" element={<UserDocuments />} />
             <Route path="budget" element={<UserBudget />} />
             <Route path="fuel" element={<UserFuel />} />
             <Route path="staff-expenses" element={<UserStaffExpenses />} />
             <Route path="trips" element={<UserTrips />} />
             <Route path="workforce" element={<UserWorkforce />} />
+            <Route path="settings" element={<UserSettings />} />
           </Route>
 
           {/* 404 */}

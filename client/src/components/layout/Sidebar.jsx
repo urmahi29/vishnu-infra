@@ -33,8 +33,9 @@ const userMenuItems = [
   { path: '/user/workforce', icon: FiUsers, label: 'Workforce' },
   { path: '/user/fuel', icon: FiDroplet, label: 'Fuel' },
   { path: '/user/staff-expenses', icon: FiCreditCard, label: 'Staff Expenses' },
-  { path: '/user/trips', icon: FiNavigation, label: 'Trips' },
+  { path: '/user/trips', icon: FiNavigation, label: 'Trip' },
   { path: '/user/documents', icon: FiFileText, label: 'Documents' },
+  { path: '/user/settings', icon: FiSettings, label: 'Settings' },
   { path: '/user/profile', icon: FiUser, label: 'Profile' },
 ];
 

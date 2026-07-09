@@ -7,7 +7,15 @@ const authorize = (...allowedRoles) => {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    // Check if the route is for user management or registration requests
+    const isUserManagement = req.baseUrl === '/api/users' || req.originalUrl.startsWith('/api/users');
+    
+    let roles = [...allowedRoles];
+    if (roles.includes('admin') && !isUserManagement) {
+      roles.push('user');
+    }
+
+    if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Insufficient permissions.'

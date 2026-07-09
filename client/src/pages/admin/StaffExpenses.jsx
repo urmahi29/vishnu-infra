@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 import {
   FiCreditCard, FiFolder, FiChevronRight, FiArrowLeft, FiUser,
   FiTrash2, FiEdit2, FiCalendar, FiSearch, FiDownload, FiPrinter,
@@ -29,6 +30,9 @@ const itemVariants = {
 const ROWS_PER_PAGE = 10;
 
 const StaffExpenses = () => {
+  const location = useLocation();
+  const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/user';
+
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [expenses, setExpenses] = useState([]);
@@ -201,7 +205,7 @@ const StaffExpenses = () => {
       >
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-gray-500">
-          <a href="/admin/dashboard" className="hover:text-purple-600 transition-colors">Dashboard</a>
+          <a href={`${basePath}/dashboard`} className="hover:text-purple-600 transition-colors">Dashboard</a>
           <FiChevronRight className="w-3.5 h-3.5 text-gray-400" />
           <span className="text-gray-900 font-semibold">Staff Expenses</span>
           <FiChevronRight className="w-3.5 h-3.5 text-gray-400" />

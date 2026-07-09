@@ -15,10 +15,11 @@ const getTasks = async (req, res, next) => {
     if (assigned_to) { whereClause.push('t.assigned_to = ?'); params.push(assigned_to); }
 
     // Non-admin users see only their tasks or tasks in their projects
-    if (req.user.role !== 'admin') {
-      whereClause.push('(t.assigned_to = ? OR t.created_by = ? OR t.project_id IN (SELECT id FROM projects WHERE assigned_manager_id = ?))');
-      params.push(req.user.id, req.user.id, req.user.id);
-    }
+    // (Disabled to make user and admin views same and connected)
+    // if (req.user.role !== 'admin') {
+    //   whereClause.push('(t.assigned_to = ? OR t.created_by = ? OR t.project_id IN (SELECT id FROM projects WHERE assigned_manager_id = ?))');
+    //   params.push(req.user.id, req.user.id, req.user.id);
+    // }
 
     const whereStr = whereClause.length > 0 ? 'WHERE ' + whereClause.join(' AND ') : '';
 
