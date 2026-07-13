@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);
@@ -112,7 +112,15 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     // Also sign out from Firebase
     firebaseSignOut();
-  };
+  }, []);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener('auth-unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth-unauthorized', handleUnauthorized);
+  }, [logout]);
 
   const updateUser = (updatedData) => {
     setUser(prev => ({ ...prev, ...updatedData }));

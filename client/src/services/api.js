@@ -31,7 +31,7 @@ api.interceptors.response.use(
       if (status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.dispatchEvent(new Event('auth-unauthorized'));
       }
 
       // Check if the response data is an HTML page (like 502/504 proxy timeout)
