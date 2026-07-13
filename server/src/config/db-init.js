@@ -103,8 +103,12 @@ const initializeDatabase = async () => {
       }
     } else {
       console.log(`✓ Found ${existingTables.length} existing tables`);
+    }
+
+    // Run migrations and verification unconditionally
+    console.log('🔄 Running database migrations and verification...');
       
-      // Migration: Add firebase_uid column if it doesn't exist
+    // Migration: Add firebase_uid column if it doesn't exist
       try {
         await connection.query(
           `ALTER TABLE users ADD COLUMN firebase_uid VARCHAR(255) DEFAULT NULL AFTER password`
@@ -381,7 +385,6 @@ const initializeDatabase = async () => {
       } catch (err) {
         console.warn(`  ⚠ Could not create project_trips table: ${err.message}`);
       }
-    }
 
     // Step 4: Seed default users if users table is empty
     await connection.query(`USE \`${dbName}\``);
@@ -520,8 +523,12 @@ const initializeDatabase = async () => {
         }
       } else {
         console.log('✓ SQLite database already contains tables');
+      }
+      
+      // SQLite migrations and verification (run unconditionally)
+      console.log('🔄 Running SQLite migrations and verification...');
         
-        // Migration: Add rejection_reason column to SQLite if it doesn't exist
+      // Migration: Add rejection_reason column to SQLite if it doesn't exist
         try {
           db.prepare(`ALTER TABLE users ADD COLUMN rejection_reason TEXT DEFAULT NULL`).run();
           console.log('✓ Added rejection_reason column to SQLite users table');
@@ -771,7 +778,6 @@ const initializeDatabase = async () => {
         } catch (sqliteErr) {
           console.warn(`  ⚠️ SQLite migration error (project_trips): ${sqliteErr.message}`);
         }
-      }
       
       // Seed default users in SQLite if empty
       const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();

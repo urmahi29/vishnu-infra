@@ -613,6 +613,24 @@ CREATE TABLE documents (
   version INT DEFAULT 1,
   status ENUM('draft', 'final', 'archived') DEFAULT 'draft',
   uploaded_by INT,
+  vehicle_number VARCHAR(50) DEFAULT NULL,
+  vehicle_model VARCHAR(100) DEFAULT NULL,
+  vehicle_type VARCHAR(50) DEFAULT NULL,
+  document_category VARCHAR(50) DEFAULT NULL,
+  document_number VARCHAR(100) DEFAULT NULL,
+  issue_date DATE DEFAULT NULL,
+  expiry_date DATE DEFAULT NULL,
+  remarks TEXT DEFAULT NULL,
+  company_name VARCHAR(255) DEFAULT NULL,
+  brand VARCHAR(255) DEFAULT NULL,
+  year INT DEFAULT NULL,
+  fuel_type VARCHAR(50) DEFAULT NULL,
+  engine_number VARCHAR(100) DEFAULT NULL,
+  chassis_number VARCHAR(100) DEFAULT NULL,
+  operator_name VARCHAR(255) DEFAULT NULL,
+  insurance_expiry DATE DEFAULT NULL,
+  fitness_expiry DATE DEFAULT NULL,
+  pollution_expiry DATE DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
@@ -808,6 +826,45 @@ CREATE TABLE trips (
   FOREIGN KEY (driver_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_trip_equipment (equipment_id),
   INDEX idx_trip_driver (driver_id)
+);
+
+-- Project Fuel Entries
+CREATE TABLE project_fuel_entries (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  project_id INT NOT NULL,
+  quantity DECIMAL(10, 2) NOT NULL,
+  cost DECIMAL(12, 2) NOT NULL,
+  purchased_by VARCHAR(255) NOT NULL,
+  fuel_date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  INDEX idx_project_fuel_project (project_id)
+);
+
+-- Project Staff Expenses
+CREATE TABLE project_staff_expenses (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  project_id INT NOT NULL,
+  staff_name VARCHAR(255) NOT NULL,
+  paid_by VARCHAR(255) NOT NULL,
+  amount DECIMAL(12, 2) NOT NULL,
+  expense_date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  INDEX idx_project_staff_expenses_project (project_id)
+);
+
+-- Project Trips
+CREATE TABLE project_trips (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  project_id INT NOT NULL,
+  trip_type VARCHAR(50) NOT NULL,
+  trip_date DATE NOT NULL,
+  trip_number VARCHAR(100) NOT NULL,
+  vehicle_number VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  INDEX idx_project_trips_project (project_id)
 );
 
 -- ============================================================
