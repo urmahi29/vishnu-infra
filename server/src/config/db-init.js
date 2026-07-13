@@ -28,28 +28,35 @@ const initializeDatabase = async () => {
   let connection;
   try {
     console.log('🔄 Connecting to MySQL server...');
+    const isRemote = process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1';
+    if (isRemote) {
+      dbConfig.database = dbName;
+    }
+    
     connection = await mysql.createConnection(dbConfig);
     console.log('✓ Connected to MySQL server');
 
-    // Step 1: Check if database exists, create if not
-    console.log(`🔄 Checking database '${dbName}'...`);
-    const [databases] = await connection.query(
-      `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`,
-      [dbName]
-    );
-
-    if (databases.length === 0) {
-      console.log(`🔄 Creating database '${dbName}'...`);
-      await connection.query(
-        `CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    if (!isRemote) {
+      // Step 1: Check if database exists, create if not
+      console.log(`🔄 Checking database '${dbName}'...`);
+      const [databases] = await connection.query(
+        `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`,
+        [dbName]
       );
-      console.log(`✓ Database '${dbName}' created`);
-    } else {
-      console.log(`✓ Database '${dbName}' already exists`);
-    }
 
-    // Step 2: Use the database and check if tables exist
-    await connection.query(`USE \`${dbName}\``);
+      if (databases.length === 0) {
+        console.log(`🔄 Creating database '${dbName}'...`);
+        await connection.query(
+          `CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+        );
+        console.log(`✓ Database '${dbName}' created`);
+      } else {
+        console.log(`✓ Database '${dbName}' already exists`);
+      }
+
+      // Step 2: Use the database and check if tables exist
+      await connection.query(`USE \`${dbName}\``);
+    }
 
     const [tables] = await connection.query(
       `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ?`,
