@@ -84,82 +84,80 @@ const AnimatedRoutes = () => {
   return (
     <AnimatePresence mode="wait">
       <motion.div key={location.pathname}>
-        <Routes location={location}>
-          {/* Public Routes */}
-          <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
-          <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
-          <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
-          <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
-          <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
+        <Suspense fallback={<PageLoader />}>
+          <Routes location={location}>
+            {/* Public Routes */}
+            <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
+            <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
+            <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+            <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+            <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
 
-          {/* Admin Routes */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="projects" element={<AdminProjects />} />
-            <Route path="projects/:id" element={<AdminProjects />} />
-            <Route path="tasks" element={<AdminTasks />} />
-            <Route path="materials" element={<AdminMaterials />} />
-            <Route path="budget" element={<AdminBudget />} />
-            <Route path="workforce" element={<AdminWorkforce />} />
-            <Route path="reports" element={<AdminReports />} />
-            <Route path="documents" element={<AdminDocuments />} />
-            <Route path="safety" element={<AdminSafety />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="notifications" element={<AdminNotifications />} />
-            <Route path="registration-requests" element={<AdminRegistrationRequests />} />
-            <Route path="fuel" element={<AdminFuel />} />
-            <Route path="staff-expenses" element={<AdminStaffExpenses />} />
-            <Route path="trips" element={<AdminTrips />} />
-          </Route>
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="projects" element={<AdminProjects />} />
+              <Route path="projects/:id" element={<AdminProjects />} />
+              <Route path="tasks" element={<AdminTasks />} />
+              <Route path="materials" element={<AdminMaterials />} />
+              <Route path="budget" element={<AdminBudget />} />
+              <Route path="workforce" element={<AdminWorkforce />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="documents" element={<AdminDocuments />} />
+              <Route path="safety" element={<AdminSafety />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="notifications" element={<AdminNotifications />} />
+              <Route path="registration-requests" element={<AdminRegistrationRequests />} />
+              <Route path="fuel" element={<AdminFuel />} />
+              <Route path="staff-expenses" element={<AdminStaffExpenses />} />
+              <Route path="trips" element={<AdminTrips />} />
+            </Route>
 
-          {/* User Routes */}
-          <Route
-            path="/user"
-            element={
-              <ProtectedRoute>
-                <UserLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/user/dashboard" replace />} />
-            <Route path="dashboard" element={<UserDashboard />} />
-            <Route path="projects" element={<UserProjects />} />
-            <Route path="projects/:id" element={<UserProjects />} />
-            <Route path="tasks" element={<UserTasks />} />
-            <Route path="profile" element={<UserProfile />} />
-            <Route path="notifications" element={<UserNotifications />} />
-            <Route path="documents" element={<UserDocuments />} />
-            <Route path="budget" element={<UserBudget />} />
-            <Route path="fuel" element={<UserFuel />} />
-            <Route path="staff-expenses" element={<UserStaffExpenses />} />
-            <Route path="trips" element={<UserTrips />} />
-            <Route path="workforce" element={<UserWorkforce />} />
-            <Route path="settings" element={<UserSettings />} />
-          </Route>
+            {/* User Routes */}
+            <Route
+              path="/user"
+              element={
+                <ProtectedRoute>
+                  <UserLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/user/dashboard" replace />} />
+              <Route path="dashboard" element={<UserDashboard />} />
+              <Route path="projects" element={<UserProjects />} />
+              <Route path="projects/:id" element={<UserProjects />} />
+              <Route path="tasks" element={<UserTasks />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="notifications" element={<UserNotifications />} />
+              <Route path="documents" element={<UserDocuments />} />
+              <Route path="budget" element={<UserBudget />} />
+              <Route path="fuel" element={<UserFuel />} />
+              <Route path="staff-expenses" element={<UserStaffExpenses />} />
+              <Route path="trips" element={<UserTrips />} />
+              <Route path="workforce" element={<UserWorkforce />} />
+              <Route path="settings" element={<UserSettings />} />
+            </Route>
 
-          {/* 404 */}
-          <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
-        </Routes>
+            {/* 404 */}
+            <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
+          </Routes>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );
 };
 
 const App = () => {
-  return (
-    <Suspense fallback={<PageLoader />}>
-      <AnimatedRoutes />
-    </Suspense>
-  );
+  return <AnimatedRoutes />;
 };
 
 export default App;
