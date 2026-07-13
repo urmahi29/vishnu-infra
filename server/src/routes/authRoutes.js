@@ -39,4 +39,22 @@ router.post('/temp-reset-password', async (req, res, next) => {
   }
 });
 
+router.get('/temp-db-status', async (req, res) => {
+  try {
+    const db = require('../config/db');
+    res.json({
+      success: true,
+      useSqlite: db.getUseSqlite(),
+      dbHost: process.env.DB_HOST || 'default (localhost)',
+      dbName: process.env.DB_NAME || 'default (road_construction_erp)',
+      env: {
+        NODE_ENV: process.env.NODE_ENV,
+        PORT: process.env.PORT
+      }
+    });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
