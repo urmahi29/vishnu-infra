@@ -152,7 +152,7 @@ const AdminDashboard = () => {
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {user?.name?.split(' ')[0] || 'Admin'}
+            Welcome back, {user?.name ? user.name.split(' ')[0] : 'Admin'}
           </h1>
           <p className="text-gray-500 mt-1 text-sm">Here's your construction overview for today.</p>
         </div>
