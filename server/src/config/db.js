@@ -32,7 +32,7 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD || 'root123',
   database: process.env.DB_NAME || 'road_construction_erp',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 3,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0
