@@ -14,7 +14,7 @@ const UserLayout = () => {
       <div className={`transition-all duration-300 ml-0 ${sidebarOpen ? 'lg:ml-[260px]' : 'lg:ml-20'}`}>
         <Navbar role="user" onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         
-        <main className="p-4 sm:p-6 mt-16">
+        <main className="px-0 py-4 sm:p-6 mt-16">
           <AnimatePresence mode="wait">
             <motion.div
               initial={{ opacity: 0, y: 20 }}

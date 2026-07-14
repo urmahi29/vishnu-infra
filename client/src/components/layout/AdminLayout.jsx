@@ -20,7 +20,7 @@ const AdminLayout = () => {
         <Navbar role="admin" onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
         {/* Page Content */}
-        <main className="p-4 sm:p-6 mt-16">
+        <main className="px-0 py-4 sm:p-6 mt-16">
           <AnimatePresence mode="wait">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
