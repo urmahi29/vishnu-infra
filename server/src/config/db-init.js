@@ -80,12 +80,24 @@ const initializeDatabase = async () => {
           : initSql;
         
         // Execute each statement separately to avoid multi-statement issues
+        const removeComments = (sql) => {
+          return sql
+            .split('\n')
+            .filter(line => !line.trim().startsWith('--'))
+            .join('\n')
+            .trim();
+        };
+
         const statements = schemaPart
           .split(';')
-          .map(s => s.trim())
-          .filter(s => s.length > 0 && !s.startsWith('--'));
+          .map(s => removeComments(s))
+          .filter(s => s.length > 0);
         
         for (const statement of statements) {
+          if (isRemote && (statement.toUpperCase().startsWith('CREATE DATABASE') || 
+                           statement.toUpperCase().startsWith('USE '))) {
+            continue;
+          }
           try {
             await connection.query(statement);
           } catch (stmtErr) {
