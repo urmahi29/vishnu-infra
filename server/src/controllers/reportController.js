@@ -3,6 +3,17 @@ const db = require('../config/db');
 // Dashboard KPIs
 const getDashboardKPIs = async (req, res, next) => {
   try {
+    const useSqlite = db.getUseSqlite();
+    const workforceQuery = useSqlite
+      ? `SELECT 
+          COUNT(*) as total_workers,
+          SUM(CASE WHEN end_date IS NULL OR end_date >= date('now') THEN 1 ELSE 0 END) as active_workers
+         FROM project_staff`
+      : `SELECT 
+          COUNT(*) as total_workers,
+          SUM(CASE WHEN end_date IS NULL OR end_date >= CURDATE() THEN 1 ELSE 0 END) as active_workers
+         FROM project_staff`;
+
     const [projectStats, taskStats, equipmentStats, workforceStats, financialStats] = await Promise.all([
       db.query(`SELECT 
         COUNT(*) as total_projects,
@@ -23,10 +34,7 @@ const getDashboardKPIs = async (req, res, next) => {
         SUM(CASE WHEN status = 'in_use' THEN 1 ELSE 0 END) as in_use,
         SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as under_maintenance
        FROM equipment`),
-      db.query(`SELECT 
-        COUNT(*) as total_workers,
-        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_workers
-       FROM workforce`),
+      db.query(workforceQuery),
       db.query(`SELECT 
         COALESCE(SUM(CASE WHEN type = 'expense' AND status = 'approved' THEN amount ELSE 0 END), 0) as total_expenses,
         COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income
@@ -115,16 +123,26 @@ const getEquipmentUtilization = async (req, res, next) => {
   }
 };
 
-// Workforce Distribution
 const getWorkforceDistribution = async (req, res, next) => {
   try {
+    const useSqlite = db.getUseSqlite();
+    const activeCondition = useSqlite
+      ? "(ps.end_date IS NULL OR ps.end_date >= date('now'))"
+      : "(ps.end_date IS NULL OR ps.end_date >= CURDATE())";
+
     const [byType, byDesignation, byProject] = await Promise.all([
-      db.query("SELECT worker_type, COUNT(*) as count FROM workforce WHERE status = 'active' GROUP BY worker_type"),
-      db.query("SELECT designation, COUNT(*) as count FROM workforce WHERE status = 'active' GROUP BY designation"),
-      db.query(`SELECT p.name as project_name, COUNT(w.id) as count
-       FROM workforce w JOIN projects p ON w.current_project_id = p.id
-       WHERE w.status = 'active' AND w.current_project_id IS NOT NULL
-       GROUP BY p.name`)
+      db.query(useSqlite
+        ? "SELECT 'Contract' as worker_type, COUNT(*) as count FROM project_staff ps WHERE ps.end_date IS NULL OR ps.end_date >= date('now')"
+        : "SELECT 'Contract' as worker_type, COUNT(*) as count FROM project_staff ps WHERE ps.end_date IS NULL OR ps.end_date >= CURDATE()"
+      ),
+      db.query(useSqlite
+        ? "SELECT ps.work_role as designation, COUNT(*) as count FROM project_staff ps WHERE ps.end_date IS NULL OR ps.end_date >= date('now') GROUP BY ps.work_role"
+        : "SELECT ps.work_role as designation, COUNT(*) as count FROM project_staff ps WHERE ps.end_date IS NULL OR ps.end_date >= CURDATE() GROUP BY ps.work_role"
+      ),
+      db.query(useSqlite
+        ? `SELECT p.project_name as project_name, COUNT(ps.id) as count FROM project_staff ps JOIN projects p ON ps.project_id = p.id WHERE ${activeCondition} GROUP BY p.project_name`
+        : `SELECT p.name as project_name, COUNT(ps.id) as count FROM project_staff ps JOIN projects p ON ps.project_id = p.id WHERE ${activeCondition} GROUP BY p.name`
+      )
     ]);
 
     res.json({ success: true, data: { by_type: byType, by_designation: byDesignation, by_project: byProject } });

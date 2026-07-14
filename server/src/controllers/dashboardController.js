@@ -14,7 +14,7 @@ const getAdminDashboard = async (req, res, next) => {
         (SELECT COUNT(*) FROM tasks WHERE status != 'completed') as pending_tasks,
         (SELECT COUNT(*) FROM tasks WHERE status = 'completed') as completed_tasks,
         (SELECT COUNT(*) FROM equipment WHERE status = 'maintenance') as equipment_in_maintenance,
-        (SELECT COUNT(*) FROM workforce WHERE status = 'active') as active_workers,
+        (SELECT COUNT(*) FROM project_staff WHERE end_date IS NULL OR end_date >= date('now')) as active_workers,
         (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE status = 'approved' AND strftime('%Y-%m', expense_date) = strftime('%Y-%m', 'now')) as monthly_expenses,
         (SELECT COALESCE(SUM(total_amount), 0) FROM invoices WHERE status = 'paid' AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')) as monthly_revenue
       `;
@@ -28,7 +28,7 @@ const getAdminDashboard = async (req, res, next) => {
         (SELECT COUNT(*) FROM tasks WHERE status != 'completed') as pending_tasks,
         (SELECT COUNT(*) FROM tasks WHERE status = 'completed') as completed_tasks,
         (SELECT COUNT(*) FROM equipment WHERE status = 'maintenance') as equipment_in_maintenance,
-        (SELECT COUNT(*) FROM workforce WHERE status = 'active') as active_workers,
+        (SELECT COUNT(*) FROM project_staff WHERE end_date IS NULL OR end_date >= CURDATE()) as active_workers,
         (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE status = 'approved' AND MONTH(expense_date) = MONTH(CURDATE()) AND YEAR(expense_date) = YEAR(CURDATE())) as monthly_expenses,
         (SELECT COALESCE(SUM(total_amount), 0) FROM invoices WHERE status = 'paid' AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())) as monthly_revenue
       `;
@@ -41,7 +41,10 @@ const getAdminDashboard = async (req, res, next) => {
       db.query("SELECT t.id, t.title, t.status, t.priority, t.due_date, p.name as project_name FROM tasks t LEFT JOIN projects p ON t.project_id = p.id WHERE t.status != 'completed' ORDER BY t.due_date ASC LIMIT 10"),
       db.query(upcomingMaintQuery),
       db.query("SELECT e.id, e.description, e.amount, e.expense_date, e.category, p.name as project_name FROM expenses e LEFT JOIN projects p ON e.project_id = p.id WHERE e.status = 'approved' ORDER BY e.expense_date DESC LIMIT 5"),
-      db.query("SELECT w.id, w.name, w.designation, w.worker_type, p.name as project_name FROM workforce w LEFT JOIN projects p ON w.current_project_id = p.id WHERE w.status = 'active' ORDER BY w.id ASC LIMIT 5")
+      db.query(useSqlite
+        ? "SELECT ps.id, ps.staff_name as name, ps.work_role as designation, 'Contract' as worker_type, p.project_name as project_name FROM project_staff ps LEFT JOIN projects p ON ps.project_id = p.id WHERE ps.end_date IS NULL OR ps.end_date >= date('now') ORDER BY ps.id ASC LIMIT 5"
+        : "SELECT ps.id, ps.staff_name as name, ps.work_role as designation, 'Contract' as worker_type, p.name as project_name FROM project_staff ps LEFT JOIN projects p ON ps.project_id = p.id WHERE ps.end_date IS NULL OR ps.end_date >= CURDATE() ORDER BY ps.id ASC LIMIT 5"
+      )
     ]);
 
     res.json({
