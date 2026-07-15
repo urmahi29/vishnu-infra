@@ -166,6 +166,7 @@ const Documents = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [showEditVehicle, setShowEditVehicle] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteFolderConfirm, setDeleteFolderConfirm] = useState(null);
   const [editingDoc, setEditingDoc] = useState(null);
   const [uploading, setUploading] = useState(false);
 
@@ -640,6 +641,26 @@ const Documents = () => {
     }
   };
 
+  // Delete entire vehicle folder
+  const handleDeleteFolder = async () => {
+    if (!deleteFolderConfirm) return;
+    setUploading(true);
+    try {
+      // Loop through all documents in the folder and delete them
+      for (const doc of deleteFolderConfirm.documents) {
+        await documentsAPI.delete(doc.id);
+      }
+      toast.success(`Vehicle folder ${deleteFolderConfirm.vehicle_number} and all its documents deleted successfully.`);
+      setDeleteFolderConfirm(null);
+      setActiveVehicle(null);
+      fetchDocs();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete vehicle folder.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Edit vehicle folder parameters
   const handleEditVehicleClick = (vehicle) => {
     setVehicleForm({
@@ -929,10 +950,18 @@ const Documents = () => {
                         {expiryStatus.text}
                       </div>
 
-                      <button onClick={() => setActiveVehicle(vehicle)}
-                        className="py-1.5 px-4 bg-white border border-gray-200 text-xs font-bold text-blue-600 hover:text-blue-700 hover:bg-gray-100 rounded-xl transition-all shadow-sm">
-                        Open Folder
-                      </button>
+                      <div className="flex gap-1.5">
+                        {canEdit && (
+                          <button onClick={(e) => { e.stopPropagation(); setDeleteFolderConfirm(vehicle); }}
+                            className="p-1.5 bg-white border border-gray-200 text-red-600 hover:bg-red-50 rounded-xl transition-all shadow-sm" title="Delete Folder">
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button onClick={() => setActiveVehicle(vehicle)}
+                          className="py-1.5 px-4 bg-white border border-gray-200 text-xs font-bold text-blue-600 hover:text-blue-700 hover:bg-gray-100 rounded-xl transition-all shadow-sm">
+                          Open Folder
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -974,6 +1003,10 @@ const Documents = () => {
             {/* Admin actions inside folder */}
             {canEdit && (
               <div className="flex gap-2 self-start md:self-center flex-wrap">
+                <button onClick={() => setDeleteFolderConfirm(activeVehicle)}
+                  className="px-4 py-2 border border-red-200 hover:bg-red-50 text-red-600 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                  <FiTrash2 className="w-3.5 h-3.5" /> Delete Folder
+                </button>
                 <button onClick={() => handleEditVehicleClick(activeVehicle)}
                   className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all flex items-center gap-1.5 shadow-sm">
                   <FiSettings className="w-3.5 h-3.5" /> Edit Folder Info
@@ -1655,6 +1688,34 @@ const Documents = () => {
                 <button onClick={handleDeleteDoc}
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all font-semibold shadow-lg shadow-red-200">
                   Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* -------------------- DELETE FOLDER CONFIRMATION DIALOG -------------------- */}
+      <AnimatePresence>
+        {deleteFolderConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteFolderConfirm(null)} />
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center z-10 border border-gray-100">
+              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <FiTrash2 className="w-7 h-7 text-red-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Entire Vehicle Folder?</h3>
+              <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                Are you sure you want to delete the vehicle folder <strong>{deleteFolderConfirm.vehicle_number}</strong> ({deleteFolderConfirm.vehicle_model}) and <strong>all its {deleteFolderConfirm.documents?.length || 0} document(s)</strong>? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button onClick={() => setDeleteFolderConfirm(null)}
+                  className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all font-semibold" disabled={uploading}>Cancel</button>
+                <button onClick={handleDeleteFolder} disabled={uploading}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all font-semibold shadow-lg shadow-red-200 disabled:opacity-50">
+                  {uploading ? 'Deleting...' : 'Delete Entire Folder'}
                 </button>
               </div>
             </motion.div>
