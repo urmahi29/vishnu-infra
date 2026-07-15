@@ -532,41 +532,43 @@ const Documents = () => {
       return;
     }
 
-    const missingFiles = uploadDocsList.some(item => !item.file || !item.category);
-    if (missingFiles) {
-      toast.error('All rows require a Category and a Selected File.');
+    const missingCategory = uploadDocsList.some(item => !item.category);
+    if (missingCategory) {
+      toast.error('All rows require a Category.');
       return;
     }
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('vehicle_number', uploadVehicle.vehicle_number.toUpperCase().trim());
-      formData.append('vehicle_model', uploadVehicle.vehicle_model.trim());
-      formData.append('vehicle_type', uploadVehicle.vehicle_type);
-      formData.append('project_id', uploadVehicle.project_id || '');
+      // Loop through uploadDocsList and upload one by one to support optional files safely
+      for (const item of uploadDocsList) {
+        const formData = new FormData();
+        formData.append('vehicle_number', uploadVehicle.vehicle_number.toUpperCase().trim());
+        formData.append('vehicle_model', uploadVehicle.vehicle_model.trim());
+        formData.append('vehicle_type', uploadVehicle.vehicle_type);
+        formData.append('project_id', uploadVehicle.project_id || '');
 
-      const metaArray = uploadDocsList.map(item => ({
-        category: item.category,
-        title: item.title,
-        document_number: item.document_number || '',
-        issue_date: item.issue_date || null,
-        expiry_date: item.expiry_date || null,
-        remarks: item.remarks || ''
-      }));
+        const metaArray = [{
+          category: item.category,
+          title: item.title || `${uploadVehicle.vehicle_number.toUpperCase().trim()} - ${item.category}`,
+          document_number: item.document_number || '',
+          issue_date: item.issue_date || null,
+          expiry_date: item.expiry_date || null,
+          remarks: item.remarks || ''
+        }];
 
-      formData.append('metadata', JSON.stringify(metaArray));
-      
-      uploadDocsList.forEach(item => {
-        formData.append('files', item.file);
-      });
+        formData.append('metadata', JSON.stringify(metaArray));
+        
+        if (item.file) {
+          formData.append('files', item.file);
+        }
 
-      const res = await documentsAPI.upload(formData);
-      if (res.data?.success) {
-        toast.success(res.data.message || 'Files uploaded successfully!');
-        setShowUpload(false);
-        fetchDocs();
+        await documentsAPI.upload(formData);
       }
+
+      toast.success('Documents saved successfully!');
+      setShowUpload(false);
+      fetchDocs();
     } catch (err) {
       toast.error(err.response?.data?.message || err?.message || 'Failed to upload documents');
     } finally {
@@ -1146,14 +1148,22 @@ const Documents = () => {
                                 <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${docExpiry.badge}`}>
                                   {docExpiry.label}
                                 </span>
-                                <button onClick={() => handleView(doc)}
-                                  className="p-1 bg-white border border-gray-200 hover:bg-gray-100 rounded text-blue-600 transition-all shadow-sm" title="View">
-                                  <FiEye className="w-3 h-3" />
-                                </button>
-                                <button onClick={() => handleDownload(doc)}
-                                  className="p-1 bg-white border border-gray-200 hover:bg-gray-100 rounded text-gray-600 transition-all shadow-sm" title="Download">
-                                  <FiDownload className="w-3 h-3" />
-                                </button>
+                                {doc.file_path ? (
+                                   <>
+                                     <button onClick={() => handleView(doc)}
+                                       className="p-1 bg-white border border-gray-200 hover:bg-gray-100 rounded text-blue-600 transition-all shadow-sm" title="View">
+                                       <FiEye className="w-3 h-3" />
+                                     </button>
+                                     <button onClick={() => handleDownload(doc)}
+                                       className="p-1 bg-white border border-gray-200 hover:bg-gray-100 rounded text-gray-600 transition-all shadow-sm" title="Download">
+                                       <FiDownload className="w-3 h-3" />
+                                     </button>
+                                   </>
+                                 ) : (
+                                   <span className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded font-semibold cursor-not-allowed" title="No file attached">
+                                     No File
+                                   </span>
+                                 )}
                                 {canEdit && (
                                   <>
                                     <button onClick={() => handleEditDocClick(doc)}
@@ -1430,9 +1440,9 @@ const Documents = () => {
                               </div>
                               <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Choose File <span className="text-red-400">*</span>
+                                  Choose File (Optional)
                                 </label>
-                                <input type="file" required
+                                <input type="file"
                                   onChange={(e) => handleUploadDocChange(idx, 'file', e.target.files[0])}
                                   className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all text-xs" />
                               </div>

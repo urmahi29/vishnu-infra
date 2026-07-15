@@ -88,10 +88,6 @@ const uploadDocument = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Vehicle number, model, and type are required' });
     }
 
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ success: false, message: 'At least one file is required' });
-    }
-
     let parsedMetadata = [];
     if (metadata) {
       try {
@@ -137,51 +133,100 @@ const uploadDocument = async (req, res, next) => {
     }
 
     const queries = [];
-    for (let i = 0; i < req.files.length; i++) {
-      const file = req.files[i];
-      const meta = parsedMetadata[i] || {};
-      
-      const docCode = generateCode('DOC');
-      const fileUrl = `/uploads/${file.filename}`;
-      const docCategory = meta.category || meta.document_category || 'Other';
-      const title = meta.title || meta.document_name || `${normalizedPlate} - ${docCategory}`;
+    if (parsedMetadata.length > 0) {
+      let fileIdx = 0;
+      for (let i = 0; i < parsedMetadata.length; i++) {
+        const meta = parsedMetadata[i];
+        const docCode = generateCode('DOC');
+        const docCategory = meta.category || meta.document_category || 'Other';
+        const title = meta.title || `${normalizedPlate} - ${docCategory}`;
+        
+        let fileUrl = '';
+        let filename = '';
+        let originalname = '';
+        let size = 0;
+        let mimetype = '';
 
-      queries.push({
-        sql: `INSERT INTO documents (
-          document_code, project_id, title, description, document_type,
-          file_path, file_name, original_name, file_size, file_type, uploaded_by,
-          vehicle_number, vehicle_model, vehicle_type, document_category,
-          document_number, issue_date, expiry_date, remarks
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        params: [
-          docCode,
-          project_id ? parseInt(project_id) : null,
-          title,
-          meta.remarks || null,
-          'other',
-          fileUrl,
-          file.filename,
-          file.originalname,
-          file.size,
-          file.mimetype,
-          req.user.id,
-          normalizedPlate,
-          vehicle_model.trim(),
-          vehicle_type,
-          docCategory,
-          meta.document_number || null,
-          meta.issue_date || null,
-          meta.expiry_date || null,
-          meta.remarks || null
-        ]
-      });
+        if (req.files && req.files.length > fileIdx) {
+          const file = req.files[fileIdx];
+          fileUrl = `/uploads/${file.filename}`;
+          filename = file.filename;
+          originalname = file.originalname;
+          size = file.size;
+          mimetype = file.mimetype;
+          fileIdx++;
+        }
+
+        queries.push({
+          sql: `INSERT INTO documents (
+            document_code, project_id, title, description, document_type,
+            file_path, file_name, original_name, file_size, file_type, uploaded_by,
+            vehicle_number, vehicle_model, vehicle_type, document_category,
+            document_number, issue_date, expiry_date, remarks
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          params: [
+            docCode,
+            project_id ? parseInt(project_id) : null,
+            title,
+            meta.remarks || null,
+            'other',
+            fileUrl,
+            filename,
+            originalname,
+            size,
+            mimetype,
+            req.user.id,
+            normalizedPlate,
+            vehicle_model.trim(),
+            vehicle_type,
+            docCategory,
+            meta.document_number || null,
+            meta.issue_date || null,
+            meta.expiry_date || null,
+            meta.remarks || null
+          ]
+        });
+      }
+    } else {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ success: false, message: 'No documents or files provided' });
+      }
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const docCode = generateCode('DOC');
+        const fileUrl = `/uploads/${file.filename}`;
+        queries.push({
+          sql: `INSERT INTO documents (
+            document_code, project_id, title, description, document_type,
+            file_path, file_name, original_name, file_size, file_type, uploaded_by,
+            vehicle_number, vehicle_model, vehicle_type, document_category
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          params: [
+            docCode,
+            project_id ? parseInt(project_id) : null,
+            `${normalizedPlate} - Document`,
+            null,
+            'other',
+            fileUrl,
+            file.filename,
+            file.originalname,
+            file.size,
+            file.mimetype,
+            req.user.id,
+            normalizedPlate,
+            vehicle_model.trim(),
+            vehicle_type,
+            'Other'
+          ]
+        });
+      }
     }
 
     await db.transaction(queries);
 
     res.status(201).json({
       success: true,
-      message: `${req.files.length} document(s) uploaded successfully`
+      message: 'Document(s) saved successfully'
     });
   } catch (error) {
     next(error);
@@ -268,6 +313,34 @@ const viewDocument = async (req, res, next) => {
     }
 
     const doc = documents[0];
+    if (!doc.file_path || doc.file_path.trim() === '') {
+      res.setHeader('Content-Type', 'text/html');
+      return res.status(404).send(`
+        <html>
+          <head>
+            <title>File Not Attached</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background-color: #f7fafc; margin: 0; }
+              .card { background: white; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.05); text-align: center; max-width: 450px; border: 1px solid #edf2f7; }
+              .icon { font-size: 3rem; margin-bottom: 1rem; }
+              h1 { color: #d97706; font-size: 1.5rem; margin-top: 0; margin-bottom: 0.75rem; font-weight: 700; }
+              p { color: #4a5568; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem; }
+              button { background: #4b5563; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: background 0.2s; }
+              button:hover { background: #374151; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div class="icon">ℹ️</div>
+              <h1>No File Attached</h1>
+              <p>This document log exists as a record only. No image or PDF file was uploaded for it.</p>
+              <button onclick="window.close()">Close Tab</button>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+
     const path = require('path');
     const fs = require('fs');
     const filePath = path.resolve(__dirname, '../..', doc.file_path.replace(/^\//, ''));
@@ -328,6 +401,10 @@ const downloadDocument = async (req, res, next) => {
     }
 
     const doc = documents[0];
+    if (!doc.file_path || doc.file_path.trim() === '') {
+      return res.status(404).json({ success: false, message: 'No file is attached to this document log.' });
+    }
+
     const path = require('path');
     const fs = require('fs');
     const filePath = path.resolve(__dirname, '../..', doc.file_path.replace(/^\//, ''));
@@ -355,6 +432,10 @@ const checkFileExists = async (req, res, next) => {
     }
 
     const doc = documents[0];
+    if (!doc.file_path || doc.file_path.trim() === '') {
+      return res.status(404).json({ success: false, message: 'No file is attached to this document log.' });
+    }
+
     const path = require('path');
     const fs = require('fs');
     const filePath = path.resolve(__dirname, '../..', doc.file_path.replace(/^\//, ''));
