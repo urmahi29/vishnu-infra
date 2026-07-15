@@ -101,6 +101,33 @@ app.use('/api/project-fuel', projectFuelRoutes);
 app.use('/api/project-staff-expenses', projectStaffExpenseRoutes);
 app.use('/api/project-trips', projectTripRoutes);
 
+// Temporary DB Debug Endpoint
+app.get('/api/debug-db-status', async (req, res) => {
+  try {
+    const db = require('./config/db');
+    const useSqlite = db.getUseSqlite();
+    let tables = [];
+    if (useSqlite) {
+      const sqliteDb = db.getSqliteDb();
+      const rows = sqliteDb.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+      tables = rows.map(r => r.name);
+    } else {
+      const [rows] = await db.query('SHOW TABLES');
+      tables = rows.map(r => Object.values(r)[0]);
+    }
+    res.json({
+      success: true,
+      useSqlite,
+      tables
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
