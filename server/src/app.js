@@ -112,7 +112,7 @@ app.get('/api/debug-db-status', async (req, res) => {
       const rows = sqliteDb.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
       tables = rows.map(r => r.name);
     } else {
-      const [rows] = await db.query('SHOW TABLES');
+      const rows = await db.query('SHOW TABLES');
       tables = rows.map(r => Object.values(r)[0]);
     }
     res.json({
