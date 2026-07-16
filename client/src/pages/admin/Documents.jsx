@@ -193,6 +193,15 @@ const Documents = () => {
     remarks: ''
   });
 
+  const [quickDoc, setQuickDoc] = useState({
+    category: '',
+    title: '',
+    document_number: '',
+    issue_date: '',
+    expiry_date: '',
+    file: null
+  });
+
   // Edit vehicle folder details form state
   const [vehicleForm, setVehicleForm] = useState({
     vehicle_number: '',
@@ -527,14 +536,8 @@ const Documents = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     
-    if (!uploadVehicle.vehicle_number.trim() || !uploadVehicle.vehicle_model.trim() || !uploadVehicle.vehicle_type) {
-      toast.error('Vehicle Number, Model, and Type are required.');
-      return;
-    }
-
-    const missingCategory = uploadDocsList.some(item => !item.category);
-    if (missingCategory) {
-      toast.error('All rows require a Category.');
+    if (!uploadVehicle.vehicle_number.trim()) {
+      toast.error('Vehicle Number Plate is required.');
       return;
     }
 
@@ -543,14 +546,22 @@ const Documents = () => {
       // Loop through uploadDocsList and upload one by one to support optional files safely
       for (const item of uploadDocsList) {
         const formData = new FormData();
-        formData.append('vehicle_number', uploadVehicle.vehicle_number.toUpperCase().trim());
-        formData.append('vehicle_model', uploadVehicle.vehicle_model.trim());
-        formData.append('vehicle_type', uploadVehicle.vehicle_type);
-        formData.append('project_id', uploadVehicle.project_id || '');
+        const plate = uploadVehicle.vehicle_number.toUpperCase().trim();
+        const model = uploadVehicle.vehicle_model.trim() || 'General Vehicle';
+        const type = uploadVehicle.vehicle_type || 'Other';
+        const project = uploadVehicle.project_id || '';
+
+        formData.append('vehicle_number', plate);
+        formData.append('vehicle_model', model);
+        formData.append('vehicle_type', type);
+        formData.append('project_id', project);
+
+        const category = item.category || 'Other';
+        const title = item.title || `${plate} - ${category}`;
 
         const metaArray = [{
-          category: item.category,
-          title: item.title || `${uploadVehicle.vehicle_number.toUpperCase().trim()} - ${item.category}`,
+          category: category,
+          title: title,
           document_number: item.document_number || '',
           issue_date: item.issue_date || null,
           expiry_date: item.expiry_date || null,
@@ -568,6 +579,17 @@ const Documents = () => {
 
       toast.success('Documents saved successfully!');
       setShowUpload(false);
+      
+      // Auto-open the folder we just uploaded documents to
+      const finalPlate = uploadVehicle.vehicle_number.toUpperCase().trim();
+      setActiveVehicle({
+        vehicle_number: finalPlate,
+        vehicle_model: uploadVehicle.vehicle_model.trim() || 'General Vehicle',
+        vehicle_type: uploadVehicle.vehicle_type || 'Other',
+        project_id: uploadVehicle.project_id || '',
+        documents: []
+      });
+
       fetchDocs();
     } catch (err) {
       toast.error(err.response?.data?.message || err?.message || 'Failed to upload documents');
@@ -658,6 +680,61 @@ const Documents = () => {
       fetchDocs();
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to delete vehicle folder.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Submit quick document add inside vehicle explorer
+  const handleQuickFormSubmit = async (e) => {
+    e.preventDefault();
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      const plate = activeVehicle.vehicle_number.toUpperCase().trim();
+      const model = activeVehicle.vehicle_model || 'General Vehicle';
+      const type = activeVehicle.vehicle_type || 'Other';
+      const project = activeVehicle.project_id || '';
+
+      formData.append('vehicle_number', plate);
+      formData.append('vehicle_model', model);
+      formData.append('vehicle_type', type);
+      formData.append('project_id', project);
+
+      const category = quickDoc.category || 'Other';
+      const title = quickDoc.title || `${plate} - ${category}`;
+
+      const metaArray = [{
+        category: category,
+        title: title,
+        document_number: quickDoc.document_number || '',
+        issue_date: quickDoc.issue_date || null,
+        expiry_date: quickDoc.expiry_date || null,
+        remarks: ''
+      }];
+
+      formData.append('metadata', JSON.stringify(metaArray));
+      
+      if (quickDoc.file) {
+        formData.append('files', quickDoc.file);
+      }
+
+      const res = await documentsAPI.upload(formData);
+      if (res.data?.success) {
+        toast.success('Document added successfully!');
+        setQuickDoc({
+          category: '',
+          title: '',
+          document_number: '',
+          issue_date: '',
+          expiry_date: '',
+          file: null
+        });
+        e.target.reset();
+        fetchDocs();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err?.message || 'Failed to add document');
     } finally {
       setUploading(false);
     }
@@ -1086,120 +1163,200 @@ const Documents = () => {
             </div>
           </div>
 
-          {/* 3. Grouped Documents Section */}
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <FiFile className="w-4 h-4 text-indigo-600" /> Documents Catalog
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {folderGroupedDocs.map((group) => {
-              return (
-                <div key={group.key} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-indigo-200 hover:shadow transition-all min-h-[220px]">
-                  
-                  <div>
-                    {/* Header */}
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
-                      <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                        📂 {group.label}
-                      </h4>
-                      {group.docs.length > 0 ? (
-                        <span className="px-2.5 py-0.5 bg-blue-50 border border-blue-200 text-[10px] text-blue-600 font-bold rounded-lg uppercase">
-                          {group.docs.length} File(s)
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 bg-red-50 border border-red-200 text-[10px] text-red-600 font-bold rounded-lg uppercase">
-                          Missing
-                        </span>
-                      )}
-                    </div>
+          {/* 3. Unified Documents Table */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+            <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                <FiFile className="w-4 h-4 text-indigo-600" /> Documents List
+              </h3>
+              <span className="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold px-2.5 py-1 rounded-full">
+                {activeVehicle.documents.length} File(s)
+              </span>
+            </div>
 
-                    {/* Files Listing */}
-                    {group.docs.length > 0 ? (
-                      <div className="space-y-3.5">
-                        {group.docs.map(doc => {
-                          const docExpiry = getDocExpiryStatus(doc.expiry_date);
-                          const fileStyle = getFileIcon(doc.file_name, doc.file_type);
-                          const uploadDate = new Date(doc.created_at || doc.updated_at).toLocaleDateString('en-IN', {
-                            day: 'numeric', month: 'short'
-                          });
-                          const fileSizeKB = doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : '—';
-                          
-                          return (
-                            <div key={doc.id} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-all flex justify-between items-center gap-2">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${fileStyle.color}`}>
-                                  {fileStyle.icon}
-                                </div>
-                                <div className="min-w-0">
-                                  <h5 className="font-bold text-gray-800 text-xs truncate" title={doc.title}>
-                                    {doc.title}
-                                  </h5>
-                                  <div className="flex items-center gap-x-2 text-[9px] text-gray-400 font-bold mt-0.5 flex-wrap">
-                                    <span>{uploadDate}</span>
-                                    <span>•</span>
-                                    <span>{fileSizeKB}</span>
-                                    <span>•</span>
-                                    <span className="truncate">{doc.uploaded_by_name || 'Admin'}</span>
-                                  </div>
-                                </div>
+            {activeVehicle.documents.length === 0 ? (
+              <div className="py-12 text-center text-gray-400 font-semibold flex flex-col items-center justify-center gap-2">
+                <FiAlertCircle className="w-8 h-8 text-gray-300" />
+                No documents uploaded for this vehicle.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50/50">
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Document Name</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Doc / Policy Number</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Issue Date</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Expiry Date</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Expiry Status</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Attachment</th>
+                      {canEdit && <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {activeVehicle.documents.map(doc => {
+                      const docExpiry = getDocExpiryStatus(doc.expiry_date);
+                      const fileStyle = getFileIcon(doc.file_name, doc.file_type);
+                      const uploadDate = new Date(doc.created_at || doc.updated_at).toLocaleDateString('en-IN', {
+                        day: 'numeric', month: 'short'
+                      });
+                      const fileSizeKB = doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : '—';
+                      
+                      return (
+                        <tr key={doc.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${fileStyle.color}`}>
+                                {fileStyle.icon}
                               </div>
-
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${docExpiry.badge}`}>
-                                  {docExpiry.label}
-                                </span>
-                                {doc.file_path ? (
-                                   <>
-                                     <button onClick={() => handleView(doc)}
-                                       className="p-1 bg-white border border-gray-200 hover:bg-gray-100 rounded text-blue-600 transition-all shadow-sm" title="View">
-                                       <FiEye className="w-3 h-3" />
-                                     </button>
-                                     <button onClick={() => handleDownload(doc)}
-                                       className="p-1 bg-white border border-gray-200 hover:bg-gray-100 rounded text-gray-600 transition-all shadow-sm" title="Download">
-                                       <FiDownload className="w-3 h-3" />
-                                     </button>
-                                   </>
-                                 ) : (
-                                   <span className="text-[10px] text-gray-400 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded font-semibold cursor-not-allowed" title="No file attached">
-                                     No File
-                                   </span>
-                                 )}
-                                {canEdit && (
-                                  <>
-                                    <button onClick={() => handleEditDocClick(doc)}
-                                      className="p-1 bg-white border border-gray-200 hover:bg-blue-50 rounded text-blue-600 transition-all shadow-sm" title="Replace / Edit">
-                                      <FiEdit2 className="w-3 h-3" />
-                                    </button>
-                                    <button onClick={() => setDeleteConfirm(doc)}
-                                      className="p-1 bg-white border border-gray-200 hover:bg-red-50 rounded text-red-600 transition-all shadow-sm" title="Delete">
-                                      <FiTrash2 className="w-3 h-3" />
-                                    </button>
-                                  </>
-                                )}
+                              <div>
+                                <div className="font-bold text-gray-900 text-sm">{doc.title}</div>
+                                <div className="text-[10px] text-gray-400 font-bold mt-0.5 flex gap-2">
+                                  <span>Uploaded: {uploadDate}</span>
+                                  <span>•</span>
+                                  <span>{fileSizeKB}</span>
+                                </div>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="py-6 text-center text-gray-400 text-xs font-semibold flex flex-col items-center justify-center gap-1">
-                        <FiAlertCircle className="w-5 h-5 text-gray-300" />
-                        No document uploaded
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Quick Upload action at bottom of missing groups */}
-                  {group.docs.length === 0 && canEdit && (
-                    <button type="button" onClick={() => openUploadModal(group.categories[0])}
-                      className="mt-4 w-full py-1.5 border border-dashed border-gray-200 hover:border-blue-400 hover:text-blue-500 rounded-lg text-[10px] text-gray-400 font-bold transition-all text-center">
-                      + Add {group.label}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+                          </td>
+                          <td className="p-4">
+                            <span className="font-semibold text-gray-700 text-sm bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-lg">
+                              {doc.document_category || 'Other'}
+                            </span>
+                          </td>
+                          <td className="p-4 font-mono text-xs font-semibold text-gray-600">
+                            {doc.document_number || '—'}
+                          </td>
+                          <td className="p-4 text-gray-700 text-sm">
+                            {doc.issue_date ? new Date(doc.issue_date).toLocaleDateString('en-IN') : '—'}
+                          </td>
+                          <td className="p-4 text-gray-700 text-sm">
+                            {doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString('en-IN') : '—'}
+                          </td>
+                          <td className="p-4">
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${docExpiry.badge}`}>
+                              {docExpiry.label}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            {doc.file_path ? (
+                              <div className="flex gap-1">
+                                <button onClick={() => handleView(doc)}
+                                  className="p-1 bg-white border border-gray-200 hover:bg-gray-100 text-blue-600 transition-all rounded shadow-sm" title="View">
+                                  <FiEye className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => handleDownload(doc)}
+                                  className="p-1 bg-white border border-gray-200 hover:bg-gray-100 text-gray-600 transition-all rounded shadow-sm" title="Download">
+                                  <FiDownload className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded font-semibold cursor-not-allowed">
+                                No File
+                              </span>
+                            )}
+                          </td>
+                          {canEdit && (
+                            <td className="p-4">
+                              <div className="flex gap-1">
+                                <button onClick={() => handleEditDocClick(doc)}
+                                  className="p-1 bg-white border border-gray-200 hover:bg-blue-50 text-blue-600 transition-all rounded shadow-sm" title="Edit Metadata">
+                                  <FiEdit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => setDeleteConfirm(doc)}
+                                  className="p-1 bg-white border border-gray-200 hover:bg-red-50 text-red-600 transition-all rounded shadow-sm" title="Delete">
+                                  <FiTrash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
+
+          {/* Quick Add Document Form inside Explorer */}
+          {canEdit && (
+            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <FiPlus className="text-blue-600 w-4 h-4" /> Add Document to Folder
+              </h3>
+              <form onSubmit={handleQuickFormSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                      Document Type / Category
+                    </label>
+                    <select
+                      value={quickDoc.category}
+                      onChange={(e) => setQuickDoc(prev => ({ ...prev, category: e.target.value }))}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold bg-white">
+                      <option value="">Select Category (Optional)</option>
+                      {DOCUMENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                      Document Name / Title
+                    </label>
+                    <input type="text" placeholder="e.g. Q3 Insurance Receipt"
+                      value={quickDoc.title}
+                      onChange={(e) => setQuickDoc(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                      Doc / Policy Number
+                    </label>
+                    <input type="text" placeholder="Number (Optional)"
+                      value={quickDoc.document_number}
+                      onChange={(e) => setQuickDoc(prev => ({ ...prev, document_number: e.target.value }))}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono font-bold" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                      Choose File (Optional)
+                    </label>
+                    <input type="file"
+                      onChange={(e) => setQuickDoc(prev => ({ ...prev, file: e.target.files[0] }))}
+                      className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl file:mr-3 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all text-xs" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                      Issue Date
+                    </label>
+                    <input type="date"
+                      value={quickDoc.issue_date}
+                      onChange={(e) => setQuickDoc(prev => ({ ...prev, issue_date: e.target.value }))}
+                      className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                      Expiry Date
+                    </label>
+                    <input type="date"
+                      value={quickDoc.expiry_date}
+                      onChange={(e) => setQuickDoc(prev => ({ ...prev, expiry_date: e.target.value }))}
+                      className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                  </div>
+                  <div className="flex items-end">
+                    <button type="submit" disabled={uploading}
+                      className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1">
+                      {uploading ? 'Adding...' : '+ Add Document'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       )}
 
@@ -1244,9 +1401,9 @@ const Documents = () => {
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                        Vehicle Name / Model <span className="text-red-400">*</span>
+                        Vehicle Name / Model
                       </label>
-                      <input type="text" placeholder="e.g. Tata Dumper" required
+                      <input type="text" placeholder="e.g. Tata Dumper (Optional)"
                         value={uploadVehicle.vehicle_model}
                         onChange={(e) => setUploadVehicle(prev => ({ ...prev, vehicle_model: e.target.value }))}
                         disabled={!!editingDoc || !!activeVehicle}
@@ -1254,14 +1411,14 @@ const Documents = () => {
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                        Vehicle Type <span className="text-red-400">*</span>
+                        Vehicle Type
                       </label>
-                      <select required
+                      <select
                         value={uploadVehicle.vehicle_type}
                         onChange={(e) => setUploadVehicle(prev => ({ ...prev, vehicle_type: e.target.value }))}
                         disabled={!!editingDoc || !!activeVehicle}
                         className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold bg-white">
-                        <option value="">Select Type</option>
+                        <option value="">Select Type (Optional)</option>
                         {VEHICLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
@@ -1380,21 +1537,21 @@ const Documents = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                               <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Document Type <span className="text-red-400">*</span>
+                                  Document Type
                                 </label>
-                                <select required
+                                <select
                                   value={item.category}
                                   onChange={(e) => handleUploadDocChange(idx, 'category', e.target.value)}
                                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold">
-                                  <option value="">Select Category</option>
+                                  <option value="">Select Category (Optional)</option>
                                   {DOCUMENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                               </div>
                               <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Document Name <span className="text-red-400">*</span>
+                                  Document Name
                                 </label>
-                                <input type="text" placeholder="e.g. RC Document, Q2 Insurance" required
+                                <input type="text" placeholder="e.g. RC Document, Q2 Insurance (Optional)"
                                   value={item.title}
                                   onChange={(e) => handleUploadDocChange(idx, 'title', e.target.value)}
                                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold" />
