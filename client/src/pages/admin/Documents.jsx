@@ -1098,70 +1098,7 @@ const Documents = () => {
             )}
           </div>
 
-          {/* 1. Vehicle Information Card (Exactly like Equipment details) */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-6">
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <FiTruck className="w-4 h-4 text-blue-600" /> Vehicle Information
-            </h3>
-            
-            {loadingVehicleInfo ? (
-              <div className="py-12 flex justify-center"><div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[
-                  { label: 'Vehicle Name', value: vehicleInfo?.name || activeVehicle.vehicle_model || '—' },
-                  { label: 'Company', value: vehicleInfo?.company_name || '—' },
-                  { label: 'Brand / Model', value: vehicleInfo?.brand && vehicleInfo?.model ? `${vehicleInfo.brand} ${vehicleInfo.model}` : vehicleInfo?.brand || vehicleInfo?.model || '—' },
-                  { label: 'Vehicle Number Plate', value: activeVehicle.vehicle_number },
-                  { label: 'Year', value: vehicleInfo?.year || '—' },
-                  { label: 'Fuel Type', value: vehicleInfo?.fuel_type || '—' },
-                  { label: 'Engine Number', value: vehicleInfo?.engine_number || '—' },
-                  { label: 'Chassis Number', value: vehicleInfo?.chassis_number || '—' },
-                  { label: 'Assigned Project', value: vehicleInfo?.project_name || activeVehicle.project_name || 'Not Assigned' },
-                  { label: 'Current Driver / Operator', value: vehicleInfo?.operator_name || 'Not Assigned' },
-                  { label: 'RC Status', value: vehicleInfo?.status?.replace(/_/g, ' ') || '—', isStatus: true },
-                  { label: 'Insurance Expiry', value: vehicleInfo?.insurance_expiry ? new Date(vehicleInfo.insurance_expiry).toLocaleDateString('en-IN') : '—' },
-                  { label: 'Fitness Expiry', value: vehicleInfo?.fitness_certificate ? new Date(vehicleInfo.fitness_certificate).toLocaleDateString('en-IN') : '—' },
-                  { label: 'Pollution Expiry', value: vehicleInfo?.pollution_certificate ? new Date(vehicleInfo.pollution_certificate).toLocaleDateString('en-IN') : '—' },
-                ].map(({ label, value, isStatus }) => (
-                  <div key={label} className="space-y-1 border-b border-gray-50 pb-2">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">{label}</p>
-                    {isStatus ? (
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize ${STATUS_STYLES[value?.toLowerCase()?.replace(/ /g, '_')] || 'bg-gray-100 text-gray-500'}`}>
-                        {value}
-                      </span>
-                    ) : (
-                      <p className="font-semibold text-gray-800 text-sm truncate">{value}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          {/* 2. Document statistics row inside folder */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 bottom-0 left-0 w-1 bg-blue-500" />
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Total Documents</span>
-              <p className="text-2xl font-black text-gray-900 mt-1">{folderStats.total}</p>
-            </div>
-            <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 bottom-0 left-0 w-1 bg-green-500" />
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Active Documents</span>
-              <p className="text-2xl font-black text-green-700 mt-1">{folderStats.active}</p>
-            </div>
-            <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 bottom-0 left-0 w-1 bg-amber-500" />
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Expiring Soon</span>
-              <p className="text-2xl font-black text-amber-700 mt-1">{folderStats.expiring}</p>
-            </div>
-            <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 bottom-0 left-0 w-1 bg-red-500" />
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Expired Documents</span>
-              <p className="text-2xl font-black text-red-600 mt-1">{folderStats.expired}</p>
-            </div>
-          </div>
 
           {/* 3. Unified Documents Table */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6">
