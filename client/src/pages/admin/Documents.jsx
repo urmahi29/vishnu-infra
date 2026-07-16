@@ -1368,13 +1368,13 @@ const Documents = () => {
               className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setShowUpload(false); setEditingDoc(null); }} />
             
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl z-10 border border-gray-100 max-h-[90vh] flex flex-col overflow-hidden">
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl z-10 border border-gray-100 max-h-[90vh] flex flex-col overflow-hidden">
               
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
                 <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-                  {editingDoc ? <FiEdit2 className="text-blue-500" /> : <FiUpload className="text-blue-500" />}
-                  {editingDoc ? 'Edit Document Metadata' : 'Upload Documents to Vehicle Folder'}
+                  {editingDoc ? <FiEdit2 className="text-blue-500" /> : <FiFolder className="text-blue-500" />}
+                  {editingDoc ? 'Edit Document Metadata' : 'Create Vehicle Folder'}
                 </h3>
                 <button onClick={() => { setShowUpload(false); setEditingDoc(null); }} className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400"><FiX className="w-5 h-5" /></button>
               </div>
@@ -1385,10 +1385,10 @@ const Documents = () => {
                 {/* 1. Vehicle Information (Always set) */}
                 <div className="bg-blue-50/50 rounded-2xl border border-blue-100 p-4 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-blue-800 uppercase tracking-widest">1. Folder Vehicle Information</h4>
+                    <h4 className="text-xs font-bold text-blue-800 uppercase tracking-widest">Folder Vehicle Information</h4>
                     {fetchingVehicleMeta && <span className="text-[10px] text-blue-600 font-bold animate-pulse">Checking records...</span>}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                         Vehicle Number Plate <span className="text-red-400">*</span>
@@ -1438,23 +1438,17 @@ const Documents = () => {
                   </div>
                 </div>
 
-                {/* 2. Documents Section */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                      {editingDoc ? '2. Edit Document Fields' : '2. Documents to Upload'}
-                    </h4>
-                    {!editingDoc && (
-                      <button type="button" onClick={addUploadDocRow}
-                        className="px-3.5 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-1">
-                        <FiPlus /> Add Another Document
-                      </button>
-                    )}
-                  </div>
-
+                {editingDoc && (
+                  /* 2. Documents Section - Only for Editing existing documents */
                   <div className="space-y-4">
-                    {editingDoc ? (
-                      /* SINGLE EDIT FORM */
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                        2. Edit Document Fields
+                      </h4>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* SINGLE EDIT FORM */}
                       <div className="p-4 border border-gray-200 rounded-2xl relative bg-white shadow-sm space-y-3.5">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                           <div>
@@ -1519,97 +1513,9 @@ const Documents = () => {
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      /* BULK UPLOAD ROWS */
-                      <div className="space-y-4">
-                        {uploadDocsList.map((item, idx) => (
-                          <div key={idx} className="p-4 border border-gray-200 rounded-2xl relative bg-white shadow-sm space-y-3.5 group">
-                            
-                            {/* Remove row button */}
-                            {uploadDocsList.length > 1 && (
-                              <button type="button" onClick={() => removeUploadDocRow(idx)}
-                                className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                title="Remove row">
-                                <FiTrash2 className="w-4 h-4" />
-                              </button>
-                            )}
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Document Type
-                                </label>
-                                <select
-                                  value={item.category}
-                                  onChange={(e) => handleUploadDocChange(idx, 'category', e.target.value)}
-                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold">
-                                  <option value="">Select Category (Optional)</option>
-                                  {DOCUMENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Document Name
-                                </label>
-                                <input type="text" placeholder="e.g. RC Document, Q2 Insurance (Optional)"
-                                  value={item.title}
-                                  onChange={(e) => handleUploadDocChange(idx, 'title', e.target.value)}
-                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold" />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Doc / Policy Number (Optional)
-                                </label>
-                                <input type="text" placeholder="Number"
-                                  value={item.document_number}
-                                  onChange={(e) => handleUploadDocChange(idx, 'document_number', e.target.value)}
-                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono font-bold" />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Issue Date
-                                </label>
-                                <input type="date"
-                                  value={item.issue_date}
-                                  onChange={(e) => handleUploadDocChange(idx, 'issue_date', e.target.value)}
-                                  className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Expiry Date (Optional)
-                                </label>
-                                <input type="date"
-                                  value={item.expiry_date}
-                                  onChange={(e) => handleUploadDocChange(idx, 'expiry_date', e.target.value)}
-                                  className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Description / Remarks
-                                </label>
-                                <input type="text" placeholder="Comments..."
-                                  value={item.remarks}
-                                  onChange={(e) => handleUploadDocChange(idx, 'remarks', e.target.value)}
-                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                  Choose File (Optional)
-                                </label>
-                                <input type="file"
-                                  onChange={(e) => handleUploadDocChange(idx, 'file', e.target.files[0])}
-                                  className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all text-xs" />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Submit row */}
                 <div className="flex gap-2 pt-4 border-t border-gray-200 mt-6 bg-white justify-end">
