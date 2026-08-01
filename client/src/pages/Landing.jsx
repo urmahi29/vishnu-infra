@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import Loader from '../components/common/Loader';
 import logo from '../assets/logo.jpg';
 import heroHighway from '../assets/hero_highway.jpg';
 import {
@@ -433,7 +434,13 @@ const Landing = () => {
     }
   }, [isAuthenticated, isAdmin, navigate]);
 
-  if (isAuthenticated) return null;
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <Loader fullScreen />
+      </div>
+    );
+  }
 
   const features = [
     { icon: FiBarChart2, title: 'Project Management', desc: 'Plan, track, and manage construction projects with real-time milestones, budgets, and team collaboration tools.', color: 'blue' },
