@@ -24,9 +24,7 @@ export const AuthProvider = ({ children }) => {
   });
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    return !(savedToken && savedUser);
+    return !!localStorage.getItem('token');
   });
   const [error, setError] = useState(null);
 
@@ -34,7 +32,8 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = user?.role === 'admin';
 
   const loadUser = useCallback(async () => {
-    if (!token) {
+    const currentToken = localStorage.getItem('token');
+    if (!currentToken) {
       setLoading(false);
       return;
     }
@@ -45,12 +44,11 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
     } catch (err) {
-      console.error('Failed to load user:', err);
-      // Only clear credentials if it is an authentication/token issue (e.g. 401 or 403 status).
-      // For network or server errors, we retain the cached user from localStorage.
-      const isAuthError = err?.status === 401 || err?.status === 403 || 
-                          err?.response?.status === 401 || err?.response?.status === 403;
-      if (isAuthError) {
+      console.error('Failed to load user profile:', err);
+      const status = err?.status || err?.response?.status;
+      const isAuthError = status === 401 || status === 403;
+      
+      if (isAuthError || !user) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setToken(null);
@@ -59,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [user]);
 
   useEffect(() => {
     loadUser();

@@ -43,7 +43,12 @@ api.interceptors.response.use(
         });
       }
 
-      return Promise.reject(error.response.data || { success: false, message: 'Server error' });
+      const data = error.response.data;
+      const errObject = (typeof data === 'object' && data !== null)
+        ? { ...data, status }
+        : { success: false, message: typeof data === 'string' ? data : 'Server error', status };
+
+      return Promise.reject(errObject);
     }
 
     if (error.request) {
