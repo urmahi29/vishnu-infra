@@ -47,8 +47,9 @@ export const AuthProvider = ({ children }) => {
       console.error('Failed to load user profile:', err);
       const status = err?.status || err?.response?.status;
       const isAuthError = status === 401 || status === 403;
+      const hasSavedUser = !!localStorage.getItem('user');
       
-      if (isAuthError || !user) {
+      if (isAuthError || !hasSavedUser) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setToken(null);
@@ -57,7 +58,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     loadUser();
