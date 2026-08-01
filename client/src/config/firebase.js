@@ -11,10 +11,18 @@ const firebaseConfig = {
   measurementId: 'G-ZNZ3QMJMV8',
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+// Initialize Firebase safely
+let app = null;
+let auth = null;
+let googleProvider = null;
+
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
+} catch (err) {
+  console.warn('Firebase initialization warning:', err);
+}
 
 // Google Sign-In
 export const signInWithGoogle = async () => {
