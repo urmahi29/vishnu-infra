@@ -32,7 +32,7 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD || 'root123',
   database: process.env.DB_NAME || 'road_construction_erp',
   waitForConnections: true,
-  connectionLimit: 3,
+  connectionLimit: 8,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0
@@ -96,6 +96,16 @@ const query = async (sql, params) => {
     return results;
   } catch (error) {
     console.error('Database query error:', error.message);
+    // If MySQL connection lost dynamically, attempt SQLite fallback seamlessly
+    const isConnErr = error.code === 'PROTOCOL_CONNECTION_LOST' || 
+                      error.code === 'ECONNRESET' || 
+                      error.code === 'ETIMEDOUT' ||
+                      error.code === 'ENOTFOUND';
+    if (isConnErr) {
+      console.warn('MySQL connection lost during query, switching to SQLite fallback...');
+      useSqlite = true;
+      return query(sql, params);
+    }
     throw error;
   }
 };
