@@ -286,6 +286,94 @@ const deleteEmployeeDocument = async (req, res, next) => {
   }
 };
 
+const getDailyAttendance = async (req, res, next) => {
+  try {
+    const targetDate = req.query.date || new Date().toISOString().split('T')[0];
+    const useSqlite = db.getUseSqlite();
+
+    let queryStr;
+    if (useSqlite) {
+      queryStr = `
+        SELECT w.id as worker_id, w.worker_code, w.name, w.designation, w.department, w.worker_type, w.phone,
+               p.name as project_name,
+               a.id as attendance_id, a.status as attendance_status, a.check_in, a.check_out, a.hours_worked, a.notes as attendance_notes
+        FROM workforce w
+        LEFT JOIN projects p ON w.current_project_id = p.id
+        LEFT JOIN attendance a ON w.id = a.worker_id AND strftime('%Y-%m-%d', a.attendance_date) = strftime('%Y-%m-%d', ?)
+        WHERE w.status = 'active'
+        ORDER BY w.name ASC
+      `;
+    } else {
+      queryStr = `
+        SELECT w.id as worker_id, w.worker_code, w.name, w.designation, w.department, w.worker_type, w.phone,
+               p.name as project_name,
+               a.id as attendance_id, a.status as attendance_status, a.check_in, a.check_out, a.hours_worked, a.notes as attendance_notes
+        FROM workforce w
+        LEFT JOIN projects p ON w.current_project_id = p.id
+        LEFT JOIN attendance a ON w.id = a.worker_id AND DATE(a.attendance_date) = DATE(?)
+        WHERE w.status = 'active'
+        ORDER BY w.name ASC
+      `;
+    }
+
+    const records = await db.query(queryStr, [targetDate]);
+
+    res.json({
+      success: true,
+      date: targetDate,
+      data: records
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const batchMarkAttendance = async (req, res, next) => {
+  try {
+    const { attendance_date, records } = req.body;
+
+    if (!attendance_date || !Array.isArray(records)) {
+      return res.status(400).json({ success: false, message: 'Attendance date and records array are required' });
+    }
+
+    const useSqlite = db.getUseSqlite();
+    const queries = [];
+    for (const item of records) {
+      if (!item.worker_id) continue;
+      const status = item.status || 'present';
+      const check_in = item.check_in || null;
+      const check_out = item.check_out || null;
+      const notes = item.notes || null;
+      const hoursWorked = check_in && check_out ? 
+        (new Date(`2000-01-01T${check_out}`) - new Date(`2000-01-01T${check_in}`)) / (1000 * 60 * 60) : null;
+
+      if (useSqlite) {
+        queries.push({
+          sql: `DELETE FROM attendance WHERE worker_id = ? AND strftime('%Y-%m-%d', attendance_date) = strftime('%Y-%m-%d', ?)`,
+          params: [item.worker_id, attendance_date]
+        });
+      } else {
+        queries.push({
+          sql: `DELETE FROM attendance WHERE worker_id = ? AND DATE(attendance_date) = DATE(?)`,
+          params: [item.worker_id, attendance_date]
+        });
+      }
+
+      queries.push({
+        sql: `INSERT INTO attendance (worker_id, attendance_date, check_in, check_out, hours_worked, status, notes, marked_by)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: [item.worker_id, attendance_date, check_in, check_out, hoursWorked, status, notes, req.user.id]
+      });
+    }
+
+    await db.transaction(queries);
+
+    res.json({ success: true, message: 'Daily attendance saved successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getWorkforce,
   getWorker,
@@ -293,6 +381,8 @@ module.exports = {
   updateWorker,
   deleteWorker,
   markAttendance,
+  getDailyAttendance,
+  batchMarkAttendance,
   processPayroll,
   getEmployeeDocuments,
   uploadEmployeeDocument,

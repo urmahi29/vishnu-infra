@@ -21,6 +21,7 @@ const AdminTasks = lazy(() => import('./pages/admin/Tasks'));
 const AdminMaterials = lazy(() => import('./pages/admin/Materials'));
 const AdminBudget = lazy(() => import('./pages/admin/Budget'));
 const AdminWorkforce = lazy(() => import('./pages/admin/Workforce'));
+const AdminAttendance = lazy(() => import('./pages/admin/Attendance'));
 const AdminReports = lazy(() => import('./pages/admin/Reports'));
 const AdminDocuments = lazy(() => import('./pages/admin/Documents'));
 const AdminSafety = lazy(() => import('./pages/admin/Safety'));
@@ -47,6 +48,7 @@ const UserFuel = lazy(() => import('./pages/admin/Fuel'));
 const UserStaffExpenses = lazy(() => import('./pages/admin/StaffExpenses'));
 const UserTrips = lazy(() => import('./pages/admin/Trips'));
 const UserWorkforce = lazy(() => import('./pages/admin/Workforce'));
+const UserAttendance = lazy(() => import('./pages/admin/Attendance'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -110,6 +112,7 @@ const AnimatedRoutes = () => {
               <Route path="materials" element={<AdminMaterials />} />
               <Route path="budget" element={<AdminBudget />} />
               <Route path="workforce" element={<AdminWorkforce />} />
+              <Route path="attendance" element={<AdminAttendance />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="documents" element={<AdminDocuments />} />
               <Route path="safety" element={<AdminSafety />} />
@@ -144,6 +147,7 @@ const AnimatedRoutes = () => {
               <Route path="staff-expenses" element={<UserStaffExpenses />} />
               <Route path="trips" element={<UserTrips />} />
               <Route path="workforce" element={<UserWorkforce />} />
+              <Route path="attendance" element={<UserAttendance />} />
               <Route path="settings" element={<UserSettings />} />
             </Route>
 

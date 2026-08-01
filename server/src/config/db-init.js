@@ -145,14 +145,24 @@ const initializeDatabase = async () => {
         }
       }
 
-      // Migration: Modify status column ENUM to support pending and rejected
-      try {
         await connection.query(
           `ALTER TABLE users MODIFY COLUMN status ENUM('active', 'inactive', 'suspended', 'pending', 'rejected') DEFAULT 'pending'`
         );
         console.log('✓ Updated users status ENUM migration');
       } catch (alterErr) {
         console.warn(`  ⚠ Could not modify status ENUM: ${alterErr.message?.substring(0, 100)}`);
+      }
+
+      // Migration: Add last_service_date column to documents table if it doesn't exist
+      try {
+        await connection.query(
+          `ALTER TABLE documents ADD COLUMN last_service_date DATE DEFAULT NULL AFTER expiry_date`
+        );
+        console.log('✓ Added last_service_date column to documents table');
+      } catch (alterErr) {
+        if (!alterErr.message?.includes('Duplicate column')) {
+          console.warn(`  ⚠ Could not add last_service_date: ${alterErr.message?.substring(0, 100)}`);
+        }
       }
 
       // Migration: Create new tables if they don't exist

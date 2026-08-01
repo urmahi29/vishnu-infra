@@ -180,7 +180,7 @@ const Documents = () => {
     project_id: ''
   });
   const [uploadDocsList, setUploadDocsList] = useState([
-    { category: '', title: '', document_number: '', issue_date: '', expiry_date: '', remarks: '', file: null }
+    { category: '', title: '', document_number: '', issue_date: '', expiry_date: '', last_service_date: '', remarks: '', file: null }
   ]);
 
   // Edit metadata form state
@@ -190,6 +190,7 @@ const Documents = () => {
     document_number: '',
     issue_date: '',
     expiry_date: '',
+    last_service_date: '',
     remarks: ''
   });
 
@@ -199,6 +200,7 @@ const Documents = () => {
     document_number: '',
     issue_date: '',
     expiry_date: '',
+    last_service_date: '',
     file: null
   });
 
@@ -607,6 +609,7 @@ const Documents = () => {
       document_number: doc.document_number || '',
       issue_date: doc.issue_date ? doc.issue_date.split('T')[0] : '',
       expiry_date: doc.expiry_date ? doc.expiry_date.split('T')[0] : '',
+      last_service_date: doc.last_service_date ? doc.last_service_date.split('T')[0] : '',
       remarks: doc.remarks || ''
     });
     // Set upload vehicle values to prevent submit crash
@@ -617,7 +620,7 @@ const Documents = () => {
       project_id: doc.project_id || ''
     });
     setUploadDocsList([
-      { category: doc.document_category || 'Other', title: doc.title || '', document_number: doc.document_number || '', issue_date: doc.issue_date || '', expiry_date: doc.expiry_date || '', remarks: doc.remarks || '', file: null }
+      { category: doc.document_category || 'Other', title: doc.title || '', document_number: doc.document_number || '', issue_date: doc.issue_date || '', expiry_date: doc.expiry_date || '', last_service_date: doc.last_service_date || '', remarks: doc.remarks || '', file: null }
     ]);
     setShowUpload(true);
   };
@@ -633,6 +636,7 @@ const Documents = () => {
         document_number: editDocForm.document_number || null,
         issue_date: editDocForm.issue_date || null,
         expiry_date: editDocForm.expiry_date || null,
+        last_service_date: editDocForm.last_service_date || null,
         remarks: editDocForm.remarks || null
       };
 
@@ -710,6 +714,7 @@ const Documents = () => {
         document_number: quickDoc.document_number || '',
         issue_date: quickDoc.issue_date || null,
         expiry_date: quickDoc.expiry_date || null,
+        last_service_date: quickDoc.last_service_date || null,
         remarks: ''
       }];
 
@@ -728,6 +733,7 @@ const Documents = () => {
           document_number: '',
           issue_date: '',
           expiry_date: '',
+          last_service_date: '',
           file: null
         });
         e.target.reset();
@@ -1126,6 +1132,7 @@ const Documents = () => {
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Doc / Policy Number</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Issue Date</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Expiry Date</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Last Service Date</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Expiry Status</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Attachment</th>
                       {canEdit && <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>}
@@ -1170,6 +1177,9 @@ const Documents = () => {
                           </td>
                           <td className="p-4 text-gray-700 text-sm">
                             {doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString('en-IN') : '—'}
+                          </td>
+                          <td className="p-4 text-gray-700 text-sm">
+                            {doc.last_service_date ? new Date(doc.last_service_date).toLocaleDateString('en-IN') : '—'}
                           </td>
                           <td className="p-4">
                             <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${docExpiry.badge}`}>
@@ -1265,7 +1275,7 @@ const Documents = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                       Issue Date
@@ -1282,6 +1292,15 @@ const Documents = () => {
                     <input type="date"
                       value={quickDoc.expiry_date}
                       onChange={(e) => setQuickDoc(prev => ({ ...prev, expiry_date: e.target.value }))}
+                      className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                      Last Service Date
+                    </label>
+                    <input type="date"
+                      value={quickDoc.last_service_date}
+                      onChange={(e) => setQuickDoc(prev => ({ ...prev, last_service_date: e.target.value }))}
                       className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
                   </div>
                   <div className="flex items-end">
@@ -1420,7 +1439,7 @@ const Documents = () => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
                           <div>
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                               Issue Date
@@ -1437,6 +1456,15 @@ const Documents = () => {
                             <input type="date"
                               value={editDocForm.expiry_date}
                               onChange={(e) => setEditDocForm(prev => ({ ...prev, expiry_date: e.target.value }))}
+                              className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                              Last Service Date
+                            </label>
+                            <input type="date"
+                              value={editDocForm.last_service_date}
+                              onChange={(e) => setEditDocForm(prev => ({ ...prev, last_service_date: e.target.value }))}
                               className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
                           </div>
                           <div>

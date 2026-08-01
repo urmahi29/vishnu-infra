@@ -162,8 +162,8 @@ const uploadDocument = async (req, res, next) => {
             document_code, project_id, title, description, document_type,
             file_path, file_name, original_name, file_size, file_type, uploaded_by,
             vehicle_number, vehicle_model, vehicle_type, document_category,
-            document_number, issue_date, expiry_date, remarks
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            document_number, issue_date, expiry_date, last_service_date, remarks
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           params: [
             docCode,
             project_id ? parseInt(project_id) : null,
@@ -183,6 +183,7 @@ const uploadDocument = async (req, res, next) => {
             meta.document_number || null,
             meta.issue_date || null,
             meta.expiry_date || null,
+            meta.last_service_date || null,
             meta.remarks || null
           ]
         });
@@ -244,6 +245,7 @@ const updateDocument = async (req, res, next) => {
       document_number,
       issue_date,
       expiry_date,
+      last_service_date,
       remarks,
       status,
       title
@@ -263,6 +265,7 @@ const updateDocument = async (req, res, next) => {
         document_number = COALESCE(?, document_number),
         issue_date = COALESCE(?, issue_date),
         expiry_date = COALESCE(?, expiry_date),
+        last_service_date = COALESCE(?, last_service_date),
         remarks = COALESCE(?, remarks),
         status = COALESCE(?, status)
        WHERE id = ?`,
@@ -270,13 +273,14 @@ const updateDocument = async (req, res, next) => {
         project_id,
         docTitle,
         remarks,
-        vehicle_number ? vehicle_number.toUpperCase().trim() : null,
+        vehicle_number ? vehicle_number.toUpperCase().trim() : undefined,
         vehicle_model,
         vehicle_type,
         document_category,
         document_number,
         issue_date,
         expiry_date,
+        last_service_date,
         remarks,
         status,
         req.params.id

@@ -620,6 +620,7 @@ CREATE TABLE documents (
   document_number VARCHAR(100) DEFAULT NULL,
   issue_date DATE DEFAULT NULL,
   expiry_date DATE DEFAULT NULL,
+  last_service_date DATE DEFAULT NULL,
   remarks TEXT DEFAULT NULL,
   company_name VARCHAR(255) DEFAULT NULL,
   brand VARCHAR(255) DEFAULT NULL,

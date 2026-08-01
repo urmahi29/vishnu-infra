@@ -14,6 +14,8 @@ router.put('/:id', authorize('admin'), workforceController.updateWorker);
 router.delete('/:id', authorize('admin'), workforceController.deleteWorker);
 
 // Attendance
+router.get('/attendance/daily', workforceController.getDailyAttendance);
+router.post('/attendance/batch', authorize('admin'), workforceController.batchMarkAttendance);
 router.post('/attendance', authorize('admin'), workforceController.markAttendance);
 
 // Payroll
