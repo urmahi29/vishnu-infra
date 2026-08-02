@@ -227,13 +227,18 @@ const Attendance = () => {
   const handleSaveBatch = async () => {
     setSaving(true);
     try {
-      const recordsPayload = Object.keys(attendanceMap).map(workerId => ({
-        worker_id: parseInt(workerId),
-        status: attendanceMap[workerId].status,
-        check_in: attendanceMap[workerId].check_in,
-        check_out: attendanceMap[workerId].check_out,
-        notes: attendanceMap[workerId].notes
-      }));
+      const recordsPayload = workers.map(w => {
+        const wId = w.worker_id || w.id;
+        const att = attendanceMap[wId] || {};
+        return {
+          worker_id: wId,
+          name: w.name,
+          status: att.status || 'present',
+          check_in: att.check_in || '09:00',
+          check_out: att.check_out || '18:00',
+          notes: att.notes || ''
+        };
+      });
 
       const res = await workforceAPI.saveBatchAttendance({
         attendance_date: selectedDate,
@@ -241,10 +246,11 @@ const Attendance = () => {
       });
 
       if (res.data?.success) {
-        toast.success(`Attendance saved for ${selectedDate}!`);
+        toast.success(`Attendance saved successfully for ${selectedDate}!`);
         fetchDailyAttendance();
       }
     } catch (err) {
+      console.error('Save attendance error:', err);
       toast.error(err.response?.data?.message || 'Failed to save attendance');
     } finally {
       setSaving(false);
