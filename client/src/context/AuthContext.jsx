@@ -23,9 +23,7 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [token, setToken] = useState(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(() => {
-    return !!localStorage.getItem('token');
-  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const isAuthenticated = !!token && !!user;
