@@ -110,28 +110,28 @@ const initializeDatabase = async () => {
           }
         }
         // Auto-sync project_staff to workforce table if missing
-      try {
-        await connection.query(`
-          INSERT INTO workforce (worker_code, name, designation, worker_type, current_project_id, date_of_joining, basic_salary, status, phone)
-          SELECT 
-            CONCAT('WRK-PS-', ps.id),
-            ps.staff_name,
-            COALESCE(ps.work_role, 'Staff Member'),
-            'contract',
-            ps.project_id,
-            ps.joining_date,
-            ps.salary,
-            'active',
-            ''
-          FROM project_staff ps
-          WHERE NOT EXISTS (
-            SELECT 1 FROM workforce w WHERE w.name = ps.staff_name
-          )
-        `);
-        console.log('✓ Verified project_staff sync to workforce table');
-      } catch (syncErr) {
-        console.warn('  ⚠️ Project staff sync notice:', syncErr.message);
-      }
+        try {
+          await connection.query(`
+            INSERT INTO workforce (worker_code, name, designation, worker_type, current_project_id, date_of_joining, basic_salary, status, phone)
+            SELECT 
+              CONCAT('WRK-PS-', ps.id),
+              ps.staff_name,
+              COALESCE(ps.work_role, 'Staff Member'),
+              'contract',
+              ps.project_id,
+              ps.joining_date,
+              ps.salary,
+              'active',
+              ''
+            FROM project_staff ps
+            WHERE NOT EXISTS (
+              SELECT 1 FROM workforce w WHERE w.name = ps.staff_name
+            )
+          `);
+          console.log('✓ Verified project_staff sync to workforce table');
+        } catch (syncErr) {
+          console.warn('  ⚠️ Project staff sync notice:', syncErr.message);
+        }
         console.log('✓ Schema created successfully');
       } else {
         console.warn('⚠ init.sql not found at:', initSqlPath);
@@ -168,6 +168,7 @@ const initializeDatabase = async () => {
         }
       }
 
+      try {
         await connection.query(
           `ALTER TABLE users MODIFY COLUMN status ENUM('active', 'inactive', 'suspended', 'pending', 'rejected') DEFAULT 'pending'`
         );
