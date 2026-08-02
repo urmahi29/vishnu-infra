@@ -1,10 +1,14 @@
 {
-  "buildCommand": "npm install --prefix client && npm run build --prefix client",
+  "version": 2,
+  "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/:path*",
-      "destination": "/index.html"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
     }
   ]
 }
