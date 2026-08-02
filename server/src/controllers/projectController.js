@@ -167,6 +167,18 @@ const addStaff = async (req, res, next) => {
       [req.params.projectId, staff_name, work_role || null, defaultJoiningDate, end_date || null, defaultSalary]
     );
 
+    // Auto-sync into main workforce table so staff appears in Daily Attendance & ERP
+    try {
+      const workerCode = generateCode('WRK');
+      await db.query(
+        `INSERT INTO workforce (worker_code, name, designation, worker_type, current_project_id, date_of_joining, basic_salary, status, phone)
+         VALUES (?, ?, ?, 'contract', ?, ?, ?, 'active', '')`,
+        [workerCode, staff_name, work_role || 'Staff Member', req.params.projectId, defaultJoiningDate, defaultSalary]
+      );
+    } catch (syncErr) {
+      console.warn('Workforce auto-sync notice:', syncErr.message);
+    }
+
     const newStaff = await db.query('SELECT * FROM project_staff WHERE id = ?', [result.insertId]);
 
     res.status(201).json({
