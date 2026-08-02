@@ -330,19 +330,24 @@ const getDailyAttendance = async (req, res, next) => {
           )
         `);
       }
-    // Also cleanup any workforce records created from project_staff that no longer exist in project_staff
+    // Bi-directional cleanup: remove workforce entries whose name is not present in project_staff
     try {
       if (useSqlite) {
         await db.query(`
           DELETE FROM workforce 
-          WHERE worker_code LIKE 'WRK-PS-%' 
-            AND CAST(SUBSTR(worker_code, 8) AS INTEGER) NOT IN (SELECT id FROM project_staff)
+          WHERE LOWER(name) NOT IN (SELECT LOWER(staff_name) FROM project_staff)
         `);
       } else {
         await db.query(`
           DELETE FROM workforce 
-          WHERE worker_code LIKE 'WRK-PS-%' 
-            AND CAST(SUBSTRING(worker_code, 8) AS UNSIGNED) NOT IN (SELECT id FROM project_staff)
+          WHERE id IN (
+            SELECT id FROM (
+              SELECT w.id FROM workforce w 
+              WHERE NOT EXISTS (
+                SELECT 1 FROM project_staff ps WHERE LOWER(ps.staff_name) = LOWER(w.name)
+              )
+            ) as tmp
+          )
         `);
       }
     } catch (cleanupErr) {
