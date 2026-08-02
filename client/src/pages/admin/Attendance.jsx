@@ -294,54 +294,56 @@ const Attendance = () => {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Back Button & Project Switcher */}
-      <div className="flex items-center justify-between gap-4">
-        <button
-          onClick={() => setSelectedProject(null)}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-        >
-          <FiArrowLeft className="w-4 h-4" /> Back to Projects
-        </button>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Switch Project:</span>
-          <select
-            value={selectedProject === 'ALL' ? 'ALL' : selectedProject.id}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === 'ALL') setSelectedProject('ALL');
-              else {
-                const proj = projects.find(p => String(p.id) === String(val));
-                if (proj) setSelectedProject(proj);
-              }
-            }}
-            className="px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 shadow-sm"
-          >
-            <option value="ALL">All Projects (Combined)</option>
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>{p.project_name || p.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              <FiUserCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-gray-900">
-                {selectedProject === 'ALL' ? 'All Projects Attendance Register' : `Attendance Register: ${selectedProject.project_name || selectedProject.name}`}
-              </h1>
-              <p className="text-xs text-gray-500 font-medium">
-                {selectedProject === 'ALL' ? 'Showing attendance across all active projects' : `Manager: ${selectedProject.manager_name || 'Unassigned'}`}
-              </p>
-            </div>
+      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+        {/* Top bar with Back Button and Project Switcher */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+          <button
+            onClick={() => setSelectedProject(null)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer w-fit"
+          >
+            <FiArrowLeft className="w-4 h-4 text-gray-600" />
+            <span>← Back to Projects List</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Switch Project:</span>
+            <select
+              value={selectedProject === 'ALL' ? 'ALL' : selectedProject.id}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'ALL') setSelectedProject('ALL');
+                else {
+                  const proj = projects.find(p => String(p.id) === String(val));
+                  if (proj) setSelectedProject(proj);
+                }
+              }}
+              className="px-3.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 shadow-sm cursor-pointer"
+            >
+              <option value="ALL">All Projects (Combined)</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.project_name || p.name}</option>
+              ))}
+            </select>
           </div>
         </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                <FiUserCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black text-gray-900">
+                  {selectedProject === 'ALL' ? 'All Projects Attendance Register' : `Attendance Register: ${selectedProject.project_name || selectedProject.name}`}
+                </h1>
+                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                  {selectedProject === 'ALL' ? 'Showing attendance across all active projects' : `Manager: ${selectedProject.manager_name || 'Unassigned'}`}
+                </p>
+              </div>
+            </div>
+          </div>
 
         {/* Date Selector & Save Button */}
         <div className="flex items-center gap-3">
@@ -373,6 +375,7 @@ const Attendance = () => {
           )}
         </div>
       </div>
+    </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
