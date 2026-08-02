@@ -375,14 +375,16 @@ const batchMarkAttendance = async (req, res, next) => {
   try {
     const { attendance_date, records } = req.body;
 
-    if (!attendance_date || !Array.isArray(records)) {
-      return res.status(400).json({ success: false, message: 'Attendance date and records array are required' });
+    const recordsList = Array.isArray(records) ? records : (records ? Object.values(records) : []);
+    if (!attendance_date || recordsList.length === 0) {
+      return res.status(400).json({ success: false, message: 'Attendance date and records list are required' });
     }
 
     const useSqlite = db.getUseSqlite();
+    let savedCount = 0;
 
-    for (const item of records) {
-      if (!item.worker_id) continue;
+    for (const item of recordsList) {
+      if (!item || !item.worker_id) continue;
 
       // Extract numeric worker ID if passed as string like "STF-6" or "WRK-PS-6"
       let workerId = item.worker_id;
@@ -403,18 +405,25 @@ const batchMarkAttendance = async (req, res, next) => {
             `INSERT INTO workforce (id, worker_code, name, designation, worker_type, status, phone)
              VALUES (?, ?, ?, 'Staff Member', 'contract', 'active', '')`,
             [workerId, code, name]
-          ).catch(() => {});
+          ).catch((e) => console.warn('Auto-create workforce error:', e.message));
         }
       } catch (e) {
         console.warn('Workforce ID check notice:', e.message);
       }
 
-      const status = item.status || 'present';
-      const check_in = item.check_in || null;
-      const check_out = item.check_out || null;
-      const notes = item.notes || null;
-      const hoursWorked = check_in && check_out ? 
-        (new Date(`2000-01-01T${check_out}`) - new Date(`2000-01-01T${check_in}`)) / (1000 * 60 * 60) : null;
+      const status = item.status ? String(item.status) : 'present';
+      const check_in = item.check_in ? String(item.check_in) : null;
+      const check_out = item.check_out ? String(item.check_out) : null;
+      const notes = item.notes ? String(item.notes) : null;
+      const markedBy = (req.user && req.user.id) ? req.user.id : null;
+
+      let hoursWorked = null;
+      if (check_in && check_out) {
+        const diffMs = new Date(`2000-01-01T${check_out}`) - new Date(`2000-01-01T${check_in}`);
+        if (!isNaN(diffMs)) {
+          hoursWorked = diffMs / (1000 * 60 * 60);
+        }
+      }
 
       try {
         if (useSqlite) {
@@ -432,14 +441,15 @@ const batchMarkAttendance = async (req, res, next) => {
         await db.query(
           `INSERT INTO attendance (worker_id, attendance_date, check_in, check_out, hours_worked, status, notes, marked_by)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [workerId, attendance_date, check_in, check_out, hoursWorked, status, notes, req.user?.id || null]
+          [workerId, attendance_date, check_in, check_out, hoursWorked, status, notes, markedBy]
         );
+        savedCount++;
       } catch (saveErr) {
         console.error(`Failed to save attendance record for worker ${workerId}:`, saveErr.message);
       }
     }
 
-    res.json({ success: true, message: 'Daily attendance saved successfully' });
+    res.json({ success: true, message: `Daily attendance saved successfully (${savedCount} records)` });
   } catch (error) {
     next(error);
   }
