@@ -330,8 +330,23 @@ const getDailyAttendance = async (req, res, next) => {
           )
         `);
       }
-    } catch (syncErr) {
-      console.warn('Sync project_staff to workforce notice:', syncErr.message);
+    // Also cleanup any workforce records created from project_staff that no longer exist in project_staff
+    try {
+      if (useSqlite) {
+        await db.query(`
+          DELETE FROM workforce 
+          WHERE worker_code LIKE 'WRK-PS-%' 
+            AND CAST(SUBSTR(worker_code, 8) AS INTEGER) NOT IN (SELECT id FROM project_staff)
+        `);
+      } else {
+        await db.query(`
+          DELETE FROM workforce 
+          WHERE worker_code LIKE 'WRK-PS-%' 
+            AND CAST(SUBSTRING(worker_code, 8) AS UNSIGNED) NOT IN (SELECT id FROM project_staff)
+        `);
+      }
+    } catch (cleanupErr) {
+      console.warn('Sync project_staff cleanup notice:', cleanupErr.message);
     }
 
     let queryStr;

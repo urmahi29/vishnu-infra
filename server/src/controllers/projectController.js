@@ -224,6 +224,12 @@ const editStaff = async (req, res, next) => {
 
 const deleteStaff = async (req, res, next) => {
   try {
+    // Find staff member before deletion
+    const staffRows = await db.query(
+      'SELECT * FROM project_staff WHERE id = ? AND project_id = ?',
+      [req.params.id, req.params.projectId]
+    );
+
     const result = await db.query(
       'DELETE FROM project_staff WHERE id = ? AND project_id = ?',
       [req.params.id, req.params.projectId]
@@ -231,6 +237,20 @@ const deleteStaff = async (req, res, next) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Staff member not found' });
+    }
+
+    // Auto-sync deletion to workforce table
+    if (staffRows.length > 0) {
+      const staff = staffRows[0];
+      const code = `WRK-PS-${staff.id}`;
+      try {
+        await db.query(
+          'DELETE FROM workforce WHERE worker_code = ? OR (LOWER(name) = LOWER(?) AND (current_project_id = ? OR current_project_id IS NULL))',
+          [code, staff.staff_name, req.params.projectId]
+        );
+      } catch (delErr) {
+        console.warn('Workforce sync deletion notice:', delErr.message);
+      }
     }
 
     res.json({ success: true, message: 'Staff member deleted successfully' });
