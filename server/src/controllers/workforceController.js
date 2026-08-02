@@ -291,91 +291,52 @@ const getDailyAttendance = async (req, res, next) => {
     const targetDate = req.query.date || new Date().toISOString().split('T')[0];
     const useSqlite = db.getUseSqlite();
 
-    // Auto-sync any missing project_staff members into main workforce table first
-    try {
-      if (useSqlite) {
-        await db.query(`
-          INSERT INTO workforce (worker_code, name, designation, worker_type, current_project_id, date_of_joining, basic_salary, status, phone)
-          SELECT 
-            'WRK-PS-' || ps.id,
-            ps.staff_name,
-            COALESCE(ps.work_role, 'Staff Member'),
-            'contract',
-            ps.project_id,
-            COALESCE(ps.joining_date, DATE('now')),
-            COALESCE(ps.salary, 0),
-            'active',
-            ''
-          FROM project_staff ps
-          WHERE NOT EXISTS (
-            SELECT 1 FROM workforce w WHERE LOWER(w.name) = LOWER(ps.staff_name)
-          )
-        `);
-      } else {
-        await db.query(`
-          INSERT INTO workforce (worker_code, name, designation, worker_type, current_project_id, date_of_joining, basic_salary, status, phone)
-          SELECT 
-            CONCAT('WRK-PS-', ps.id),
-            ps.staff_name,
-            COALESCE(ps.work_role, 'Staff Member'),
-            'contract',
-            ps.project_id,
-            COALESCE(ps.joining_date, CURDATE()),
-            COALESCE(ps.salary, 0),
-            'active',
-            ''
-          FROM project_staff ps
-          WHERE NOT EXISTS (
-            SELECT 1 FROM workforce w WHERE LOWER(w.name) = LOWER(ps.staff_name)
-          )
-        `);
-      }
-    // Bi-directional cleanup: remove workforce entries whose name is not present in project_staff
-    try {
-      if (useSqlite) {
-        await db.query(`
-          DELETE FROM workforce 
-          WHERE LOWER(name) NOT IN (SELECT LOWER(staff_name) FROM project_staff)
-        `);
-      } else {
-        await db.query(`
-          DELETE FROM workforce 
-          WHERE id IN (
-            SELECT id FROM (
-              SELECT w.id FROM workforce w 
-              WHERE NOT EXISTS (
-                SELECT 1 FROM project_staff ps WHERE LOWER(ps.staff_name) = LOWER(w.name)
-              )
-            ) as tmp
-          )
-        `);
-      }
-    } catch (cleanupErr) {
-      console.warn('Sync project_staff cleanup notice:', cleanupErr.message);
-    }
-
     let queryStr;
     if (useSqlite) {
       queryStr = `
-        SELECT w.id as worker_id, w.worker_code, w.name, w.designation, w.department, w.worker_type, w.phone, w.current_project_id,
-               p.name as project_name,
-               a.id as attendance_id, a.status as attendance_status, a.check_in, a.check_out, a.hours_worked, a.notes as attendance_notes
-        FROM workforce w
-        LEFT JOIN projects p ON w.current_project_id = p.id
-        LEFT JOIN attendance a ON w.id = a.worker_id AND strftime('%Y-%m-%d', a.attendance_date) = strftime('%Y-%m-%d', ?)
-        WHERE w.status IS NULL OR w.status = '' OR w.status != 'terminated'
-        ORDER BY w.name ASC
+        SELECT 
+          ps.id as worker_id,
+          'STF-' || ps.id as worker_code,
+          ps.staff_name as name,
+          COALESCE(ps.work_role, 'Staff Member') as designation,
+          'Management' as department,
+          'contract' as worker_type,
+          '' as phone,
+          ps.project_id as current_project_id,
+          p.name as project_name,
+          a.id as attendance_id,
+          a.status as attendance_status,
+          a.check_in,
+          a.check_out,
+          a.hours_worked,
+          a.notes as attendance_notes
+        FROM project_staff ps
+        LEFT JOIN projects p ON ps.project_id = p.id
+        LEFT JOIN attendance a ON ps.id = a.worker_id AND strftime('%Y-%m-%d', a.attendance_date) = strftime('%Y-%m-%d', ?)
+        ORDER BY ps.staff_name ASC
       `;
     } else {
       queryStr = `
-        SELECT w.id as worker_id, w.worker_code, w.name, w.designation, w.department, w.worker_type, w.phone, w.current_project_id,
-               p.name as project_name,
-               a.id as attendance_id, a.status as attendance_status, a.check_in, a.check_out, a.hours_worked, a.notes as attendance_notes
-        FROM workforce w
-        LEFT JOIN projects p ON w.current_project_id = p.id
-        LEFT JOIN attendance a ON w.id = a.worker_id AND DATE(a.attendance_date) = DATE(?)
-        WHERE w.status IS NULL OR w.status = '' OR w.status != 'terminated'
-        ORDER BY w.name ASC
+        SELECT 
+          ps.id as worker_id,
+          CONCAT('STF-', ps.id) as worker_code,
+          ps.staff_name as name,
+          COALESCE(ps.work_role, 'Staff Member') as designation,
+          'Management' as department,
+          'contract' as worker_type,
+          '' as phone,
+          ps.project_id as current_project_id,
+          p.name as project_name,
+          a.id as attendance_id,
+          a.status as attendance_status,
+          a.check_in,
+          a.check_out,
+          a.hours_worked,
+          a.notes as attendance_notes
+        FROM project_staff ps
+        LEFT JOIN projects p ON ps.project_id = p.id
+        LEFT JOIN attendance a ON ps.id = a.worker_id AND DATE(a.attendance_date) = DATE(?)
+        ORDER BY ps.staff_name ASC
       `;
     }
 
