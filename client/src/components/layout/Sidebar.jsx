@@ -7,7 +7,7 @@ import {
   FiGrid, FiFolder, FiCheckSquare, FiTruck, FiPackage,
   FiDollarSign, FiUsers, FiBarChart2, FiFileText, FiShield,
   FiBell, FiSettings, FiUser, FiLogOut, FiChevronLeft, FiHardDrive,
-  FiUserCheck, FiDroplet, FiCreditCard, FiNavigation
+  FiUserCheck, FiDroplet, FiCreditCard, FiNavigation, FiCalendar
 } from 'react-icons/fi';
 
 import logo from '../../assets/logo.jpg';
