@@ -6,13 +6,13 @@ import Loader from './components/common/Loader';
 import AdminLayout from './components/layout/AdminLayout';
 import UserLayout from './components/layout/UserLayout';
 
-// Lazy load pages for better performance
-const Landing = lazy(() => import('./pages/Landing'));
-const Contact = lazy(() => import('./pages/Contact'));
-const Login = lazy(() => import('./pages/auth/Login'));
-const Register = lazy(() => import('./pages/auth/Register'));
-const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
-const NotFound = lazy(() => import('./pages/NotFound'));
+// Direct eager load for core public entrypoint pages to guarantee instant first-paint
+import Landing from './pages/Landing';
+import Contact from './pages/Contact';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import NotFound from './pages/NotFound';
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
