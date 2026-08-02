@@ -85,8 +85,11 @@ const Attendance = () => {
         w.worker_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         w.phone?.includes(searchTerm);
 
-      const matchesProject = !selectedProject || String(w.project_id) === String(selectedProject);
-      const matchesType = !selectedType || w.worker_type?.toLowerCase() === selectedType.toLowerCase();
+      const workerProjId = w.current_project_id || w.project_id;
+      const matchesProject = !selectedProject || String(workerProjId) === String(selectedProject);
+      const matchesType = !selectedType || 
+        w.worker_type?.toLowerCase() === selectedType.toLowerCase() ||
+        (selectedType === 'daily' && (w.worker_type?.toLowerCase() === 'daily_wage' || w.worker_type?.toLowerCase() === 'daily'));
 
       return matchesSearch && matchesProject && matchesType;
     });

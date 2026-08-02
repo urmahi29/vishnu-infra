@@ -97,9 +97,9 @@ const createWorker = async (req, res, next) => {
     const workerCode = generateCode('WRK');
 
     const result = await db.query(
-      `INSERT INTO workforce (worker_code, name, email, phone, emergency_contact, address, city, state, date_of_birth, gender, designation, department, worker_type, skill_set, experience_years, qualification, avatar, pan_number, current_project_id, supervisor_id, date_of_joining, leaving_date, basic_salary, hourly_rate, bank_name, bank_account, ifsc_code, aadhar_number, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [workerCode, name, email || null, phone, emergency_contact || null, address || null, city || null, state || null, date_of_birth || null, gender || 'male', designation || null, department || null, worker_type || 'contract', skill_set || null, experience_years || 0, qualification || null, avatar || null, pan_number || null, current_project_id || null, supervisor_id || null, date_of_joining || null, leaving_date || null, basic_salary || 0, hourly_rate || 0, bank_name || null, bank_account || null, ifsc_code || null, aadhar_number || null, notes || null]
+      `INSERT INTO workforce (worker_code, name, email, phone, emergency_contact, address, city, state, date_of_birth, gender, designation, department, worker_type, skill_set, experience_years, qualification, avatar, pan_number, current_project_id, supervisor_id, date_of_joining, leaving_date, basic_salary, hourly_rate, bank_name, bank_account, ifsc_code, aadhar_number, status, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [workerCode, name, email || null, phone, emergency_contact || null, address || null, city || null, state || null, date_of_birth || null, gender || 'male', designation || null, department || null, worker_type || 'contract', skill_set || null, experience_years || 0, qualification || null, avatar || null, pan_number || null, current_project_id || null, supervisor_id || null, date_of_joining || null, leaving_date || null, basic_salary || 0, hourly_rate || 0, bank_name || null, bank_account || null, ifsc_code || null, aadhar_number || null, req.body.status || 'active', notes || null]
     );
 
     res.status(201).json({ success: true, message: 'Employee added successfully', data: { id: result.insertId } });
@@ -294,24 +294,24 @@ const getDailyAttendance = async (req, res, next) => {
     let queryStr;
     if (useSqlite) {
       queryStr = `
-        SELECT w.id as worker_id, w.worker_code, w.name, w.designation, w.department, w.worker_type, w.phone,
+        SELECT w.id as worker_id, w.worker_code, w.name, w.designation, w.department, w.worker_type, w.phone, w.current_project_id,
                p.name as project_name,
                a.id as attendance_id, a.status as attendance_status, a.check_in, a.check_out, a.hours_worked, a.notes as attendance_notes
         FROM workforce w
         LEFT JOIN projects p ON w.current_project_id = p.id
         LEFT JOIN attendance a ON w.id = a.worker_id AND strftime('%Y-%m-%d', a.attendance_date) = strftime('%Y-%m-%d', ?)
-        WHERE w.status = 'active'
+        WHERE w.status IS NULL OR w.status = '' OR w.status != 'terminated'
         ORDER BY w.name ASC
       `;
     } else {
       queryStr = `
-        SELECT w.id as worker_id, w.worker_code, w.name, w.designation, w.department, w.worker_type, w.phone,
+        SELECT w.id as worker_id, w.worker_code, w.name, w.designation, w.department, w.worker_type, w.phone, w.current_project_id,
                p.name as project_name,
                a.id as attendance_id, a.status as attendance_status, a.check_in, a.check_out, a.hours_worked, a.notes as attendance_notes
         FROM workforce w
         LEFT JOIN projects p ON w.current_project_id = p.id
         LEFT JOIN attendance a ON w.id = a.worker_id AND DATE(a.attendance_date) = DATE(?)
-        WHERE w.status = 'active'
+        WHERE w.status IS NULL OR w.status = '' OR w.status != 'terminated'
         ORDER BY w.name ASC
       `;
     }
