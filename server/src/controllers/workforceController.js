@@ -291,6 +291,49 @@ const getDailyAttendance = async (req, res, next) => {
     const targetDate = req.query.date || new Date().toISOString().split('T')[0];
     const useSqlite = db.getUseSqlite();
 
+    // Auto-sync any missing project_staff members into main workforce table first
+    try {
+      if (useSqlite) {
+        await db.query(`
+          INSERT INTO workforce (worker_code, name, designation, worker_type, current_project_id, date_of_joining, basic_salary, status, phone)
+          SELECT 
+            'WRK-PS-' || ps.id,
+            ps.staff_name,
+            COALESCE(ps.work_role, 'Staff Member'),
+            'contract',
+            ps.project_id,
+            COALESCE(ps.joining_date, DATE('now')),
+            COALESCE(ps.salary, 0),
+            'active',
+            ''
+          FROM project_staff ps
+          WHERE NOT EXISTS (
+            SELECT 1 FROM workforce w WHERE LOWER(w.name) = LOWER(ps.staff_name)
+          )
+        `);
+      } else {
+        await db.query(`
+          INSERT INTO workforce (worker_code, name, designation, worker_type, current_project_id, date_of_joining, basic_salary, status, phone)
+          SELECT 
+            CONCAT('WRK-PS-', ps.id),
+            ps.staff_name,
+            COALESCE(ps.work_role, 'Staff Member'),
+            'contract',
+            ps.project_id,
+            COALESCE(ps.joining_date, CURDATE()),
+            COALESCE(ps.salary, 0),
+            'active',
+            ''
+          FROM project_staff ps
+          WHERE NOT EXISTS (
+            SELECT 1 FROM workforce w WHERE LOWER(w.name) = LOWER(ps.staff_name)
+          )
+        `);
+      }
+    } catch (syncErr) {
+      console.warn('Sync project_staff to workforce notice:', syncErr.message);
+    }
+
     let queryStr;
     if (useSqlite) {
       queryStr = `

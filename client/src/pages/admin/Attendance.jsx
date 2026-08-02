@@ -45,7 +45,7 @@ const Attendance = () => {
     fetchProjects();
   }, []);
 
-  // Fetch daily attendance with fail-safe workforce fallback
+  // Fetch daily attendance with 3-tier fail-safe workforce & project staff interconnect
   const fetchDailyAttendance = useCallback(async () => {
     setLoading(true);
     try {
@@ -59,26 +59,68 @@ const Attendance = () => {
         console.warn('Daily attendance fetch warning, falling back to workforce list:', attErr);
       }
 
-      // If daily attendance endpoint returned no records, fetch all active workforce members
+      // Tier 2: If daily attendance endpoint returned no records, fetch all active workforce members
       if (list.length === 0) {
-        const wfRes = await workforceAPI.getAll({ limit: 1000 });
-        if (wfRes.data?.success && Array.isArray(wfRes.data.data)) {
-          const wfList = wfRes.data.data;
-          list = wfList.map(w => ({
-            worker_id: w.id,
-            worker_code: w.worker_code,
-            name: w.name,
-            designation: w.designation,
-            department: w.department,
-            worker_type: w.worker_type,
-            phone: w.phone,
-            current_project_id: w.current_project_id,
-            project_name: w.project_name,
-            attendance_status: 'present',
-            check_in: '09:00',
-            check_out: '18:00',
-            attendance_notes: ''
-          }));
+        try {
+          const wfRes = await workforceAPI.getAll({ limit: 1000 });
+          if (wfRes.data?.success && Array.isArray(wfRes.data.data)) {
+            const wfList = wfRes.data.data;
+            list = wfList.map(w => ({
+              worker_id: w.id,
+              worker_code: w.worker_code,
+              name: w.name,
+              designation: w.designation,
+              department: w.department,
+              worker_type: w.worker_type,
+              phone: w.phone,
+              current_project_id: w.current_project_id,
+              project_name: w.project_name,
+              attendance_status: 'present',
+              check_in: '09:00',
+              check_out: '18:00',
+              attendance_notes: ''
+            }));
+          }
+        } catch (wfErr) {
+          console.warn('Workforce fetch error:', wfErr);
+        }
+      }
+
+      // Tier 3 Interconnect: Fetch project staff across all projects directly
+      if (list.length === 0) {
+        try {
+          const projRes = await projectsAPI.getAll({ all: true });
+          const allProjs = projRes.data?.data || [];
+          const staffPromises = allProjs.map(p => projectsAPI.getStaff(p.id).catch(() => ({ data: { data: [] } })));
+          const staffResults = await Promise.all(staffPromises);
+          
+          const fallbackList = [];
+          staffResults.forEach((sRes, idx) => {
+            const p = allProjs[idx];
+            const stList = sRes.data?.data || [];
+            stList.forEach(st => {
+              fallbackList.push({
+                worker_id: st.id,
+                worker_code: `STF-${st.id}`,
+                name: st.staff_name,
+                designation: st.work_role || 'Staff Member',
+                department: 'Staff',
+                worker_type: 'contract',
+                phone: '',
+                current_project_id: p.id,
+                project_name: p.project_name || p.name,
+                attendance_status: 'present',
+                check_in: '09:00',
+                check_out: '18:00',
+                attendance_notes: ''
+              });
+            });
+          });
+          if (fallbackList.length > 0) {
+            list = fallbackList;
+          }
+        } catch (projStaffErr) {
+          console.warn('Project staff fallback error:', projStaffErr);
         }
       }
 
