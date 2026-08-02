@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiCalendar, FiCheckCircle, FiXCircle, FiClock, 
   FiUserCheck, FiUsers, FiSearch, FiSave, FiRefreshCw,
-  FiFilter, FiCheck, FiX, FiAlertCircle
+  FiFilter, FiCheck, FiX, FiAlertCircle, FiFolder, FiArrowLeft, FiChevronRight, FiUser
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { workforceAPI, projectsAPI } from '../../services/api';
@@ -21,11 +21,11 @@ const Attendance = () => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [workers, setWorkers] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null); // null = Project Selection View
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // Filters
-  const [selectedProject, setSelectedProject] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -78,7 +78,7 @@ const Attendance = () => {
     fetchDailyAttendance();
   }, [fetchDailyAttendance]);
 
-  // Filtered workers list
+  // Filtered workers list based on selected project and search/type
   const filteredWorkers = useMemo(() => {
     return workers.filter(w => {
       const matchesSearch = !searchTerm || 
@@ -87,7 +87,7 @@ const Attendance = () => {
         w.phone?.includes(searchTerm);
 
       const workerProjId = w.current_project_id || w.project_id;
-      const matchesProject = !selectedProject || String(workerProjId) === String(selectedProject);
+      const matchesProject = !selectedProject || selectedProject === 'ALL' || String(workerProjId) === String(selectedProject.id || selectedProject);
       const matchesType = !selectedType || 
         w.worker_type?.toLowerCase() === selectedType.toLowerCase() ||
         (selectedType === 'daily' && (w.worker_type?.toLowerCase() === 'daily_wage' || w.worker_type?.toLowerCase() === 'daily'));
@@ -95,6 +95,18 @@ const Attendance = () => {
       return matchesSearch && matchesProject && matchesType;
     });
   }, [workers, searchTerm, selectedProject, selectedType]);
+
+  // Count active workers per project for the project selection cards
+  const projectWorkerCounts = useMemo(() => {
+    const counts = {};
+    workers.forEach(w => {
+      const pId = w.current_project_id || w.project_id;
+      if (pId) {
+        counts[pId] = (counts[pId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [workers]);
 
   // Summary counts for current filtered list
   const stats = useMemo(() => {
@@ -155,7 +167,7 @@ const Attendance = () => {
   const handleSaveBatch = async () => {
     setSaving(true);
     try {
-      const recordsPayload = workers.map(w => {
+      const recordsPayload = filteredWorkers.map(w => {
         const wId = w.worker_id || w.id;
         const att = attendanceMap[wId] || {};
         return {
@@ -185,18 +197,148 @@ const Attendance = () => {
     }
   };
 
+  // If no project is selected, show Project-Wise Cards View
+  if (!selectedProject) {
+    return (
+      <div className="space-y-6 pb-12 max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                <FiFolder className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-gray-900">Project-Wise Daily Attendance</h1>
+                <p className="text-xs text-gray-500 font-medium">Select a project to log & manage attendance for assigned staff members</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Select Date</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
+              />
+            </div>
+            
+            <button
+              onClick={() => setSelectedProject('ALL')}
+              className="mt-4 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+            >
+              <FiUsers className="w-4 h-4" />
+              <span>View All Projects</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Project Cards Grid */}
+        {loading ? (
+          <div className="py-20 flex justify-center items-center gap-3 text-gray-400 font-semibold text-sm bg-white rounded-2xl border border-gray-200">
+            <div className="w-6 h-6 border-3 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
+            <span>Loading projects and workforce...</span>
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="py-20 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 font-semibold flex flex-col items-center justify-center gap-2">
+            <FiAlertCircle className="w-10 h-10 text-gray-300" />
+            <span>No active projects found. Create a project to start logging attendance.</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {projects.map((p) => {
+              const staffCount = projectWorkerCounts[p.id] || 0;
+              return (
+                <motion.div
+                  key={p.id}
+                  whileHover={{ y: -4, scale: 1.01 }}
+                  onClick={() => setSelectedProject(p)}
+                  className="bg-white border border-gray-200 hover:border-amber-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                        <FiFolder className="w-6 h-6" />
+                      </div>
+                      <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold">
+                        {staffCount} Staff Members
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-extrabold text-gray-900 group-hover:text-amber-600 transition-colors">
+                        {p.project_name || p.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5 font-medium">
+                        <FiUser className="w-3.5 h-3.5 text-gray-400" />
+                        Manager: <span className="text-gray-800 font-semibold">{p.manager_name || 'Unassigned'}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-amber-600 group-hover:translate-x-1 transition-transform">
+                    <span>Manage Attendance</span>
+                    <FiChevronRight className="w-4 h-4" />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-12">
+      {/* Back Button & Project Switcher */}
+      <div className="flex items-center justify-between gap-4">
+        <button
+          onClick={() => setSelectedProject(null)}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+        >
+          <FiArrowLeft className="w-4 h-4" /> Back to Projects
+        </button>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Switch Project:</span>
+          <select
+            value={selectedProject === 'ALL' ? 'ALL' : selectedProject.id}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === 'ALL') setSelectedProject('ALL');
+              else {
+                const proj = projects.find(p => String(p.id) === String(val));
+                if (proj) setSelectedProject(proj);
+              }
+            }}
+            className="px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 shadow-sm"
+          >
+            <option value="ALL">All Projects (Combined)</option>
+            {projects.map(p => (
+              <option key={p.id} value={p.id}>{p.project_name || p.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
               <FiUserCheck className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-gray-900">Daily Attendance Register</h1>
-              <p className="text-xs text-gray-500 font-medium">Log and track daily workforce attendance</p>
+              <h1 className="text-xl font-black text-gray-900">
+                {selectedProject === 'ALL' ? 'All Projects Attendance Register' : `Attendance Register: ${selectedProject.project_name || selectedProject.name}`}
+              </h1>
+              <p className="text-xs text-gray-500 font-medium">
+                {selectedProject === 'ALL' ? 'Showing attendance across all active projects' : `Manager: ${selectedProject.manager_name || 'Unassigned'}`}
+              </p>
             </div>
           </div>
         </div>
@@ -283,25 +425,14 @@ const Attendance = () => {
           {/* Filter Dropdowns */}
           <div className="flex items-center gap-2 overflow-x-auto">
             <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none bg-white"
-            >
-              <option value="">All Projects</option>
-              {projects.map(p => (
-                <option key={p.id} value={p.id}>{p.project_name || p.name}</option>
-              ))}
-            </select>
-
-            <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
               className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none bg-white"
             >
-              <option value="">All Types</option>
-              <option value="permanent">Permanent</option>
-              <option value="contract">Contract</option>
-              <option value="daily">Daily Wages</option>
+              <option value="">All Staff Types</option>
+              <option value="permanent font-medium">Permanent</option>
+              <option value="contract font-medium">Contract</option>
+              <option value="daily font-medium">Daily Wages</option>
             </select>
 
             {canEdit && (
@@ -328,7 +459,7 @@ const Attendance = () => {
         ) : filteredWorkers.length === 0 ? (
           <div className="py-16 text-center text-gray-400 font-semibold flex flex-col items-center justify-center gap-2">
             <FiAlertCircle className="w-8 h-8 text-gray-300" />
-            <span>No active workforce records found for this date.</span>
+            <span>No staff records found for this project on selected date.</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
